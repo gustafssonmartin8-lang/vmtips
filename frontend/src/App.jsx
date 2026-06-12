@@ -1,0 +1,36 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './hooks/useAuth'
+import Layout from './components/Layout'
+import Login from './pages/Login'
+import MyTips from './pages/MyTips'
+import AllTips from './pages/AllTips'
+import Schedule from './pages/Schedule'
+import Leaderboard from './pages/Leaderboard'
+import Admin from './pages/Admin'
+
+function ProtectedRoute({ children, adminOnly = false }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (adminOnly && !user.isAdmin) return <Navigate to="/" replace />
+  return children
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route index element={<Navigate to="/mina-tips" replace />} />
+            <Route path="mina-tips"   element={<MyTips />} />
+            <Route path="alla-tips"   element={<AllTips />} />
+            <Route path="schema"      element={<Schedule />} />
+            <Route path="topplista"   element={<Leaderboard />} />
+            <Route path="admin"       element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  )
+}

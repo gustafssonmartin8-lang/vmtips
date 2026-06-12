@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  vmtips-postgres:
+    image: postgres:16-alpine
+    container_name: vmtips-postgres
+    environment:
+      POSTGRES_DB: vmtips
+      POSTGRES_USER: vmtips
+      POSTGRES_PASSWORD: vmtips2026
+    volumes:
+      - vmtips-pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vmtips"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  vmtips-backend:
+    build: ./backend
+    container_name: vmtips-backend
+    environment:
+      ConnectionStrings__Default: "Host=vmtips-postgres;Port=5432;Database=vmtips;Username=vmtips;Password=vmtips2026"
+      Jwt__Secret: "vmtips-super-secret-jwt-key-2026-change-in-prod-min32chars"
+      AllowedOrigins: "http://localhost:8080"
+    ports:
+      - "5000:5000"
+    depends_on:
+      vmtips-postgres:
+        condition: service_healthy
+
+  vmtips-frontend:
+    build: ./frontend
+    container_name: vmtips-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - vmtips-backend
+
+volumes:
+  vmtips-pgdata:
