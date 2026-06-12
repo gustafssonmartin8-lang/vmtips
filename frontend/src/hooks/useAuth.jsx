@@ -8,26 +8,35 @@ export function AuthProvider({ children }) {
     const s = localStorage.getItem('vmtips_user')
     return s ? JSON.parse(s) : null
   })
+
   const [activeGroup, setActiveGroupState] = useState(() => {
-    const s = localStorage.getItem('vmtips_group')
-    return s ? JSON.parse(s) : null
+    // Try saved group first
+    const saved = localStorage.getItem('vmtips_group')
+    if (saved) return JSON.parse(saved)
+    // Fall back to first group from saved user
+    const u = localStorage.getItem('vmtips_user')
+    if (u) {
+      const parsed = JSON.parse(u)
+      if (parsed.groups?.length > 0) return parsed.groups[0]
+    }
+    return null
   })
+
+  const setActiveGroup = (group) => {
+    localStorage.setItem('vmtips_group', JSON.stringify(group))
+    setActiveGroupState(group)
+  }
 
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password })
     localStorage.setItem('vmtips_token', data.token)
     localStorage.setItem('vmtips_user', JSON.stringify(data))
     setUser(data)
-    // Auto-select first group
+    // Always set first group on login
     if (data.groups?.length > 0) {
       setActiveGroup(data.groups[0])
     }
     return data
-  }
-
-  const setActiveGroup = (group) => {
-    localStorage.setItem('vmtips_group', JSON.stringify(group))
-    setActiveGroupState(group)
   }
 
   const logout = () => {
