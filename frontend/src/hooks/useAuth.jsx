@@ -1,24 +1,16 @@
 import { createContext, useContext, useState } from 'react'
-import api from '../lib/api'
+import api, { saveAuth, getSavedUser, clearAuth } from '../lib/api'
 
 const AuthCtx = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const s = localStorage.getItem('vmtips_user')
-    return s ? JSON.parse(s) : null
-  })
+  const [user, setUser] = useState(() => getSavedUser())
 
   const [activeGroup, setActiveGroupState] = useState(() => {
-    // Try saved group first
     const saved = localStorage.getItem('vmtips_group')
     if (saved) return JSON.parse(saved)
-    // Fall back to first group from saved user
-    const u = localStorage.getItem('vmtips_user')
-    if (u) {
-      const parsed = JSON.parse(u)
-      if (parsed.groups?.length > 0) return parsed.groups[0]
-    }
+    const u = getSavedUser()
+    if (u?.groups?.length > 0) return u.groups[0]
     return null
   })
 
@@ -29,10 +21,8 @@ export function AuthProvider({ children }) {
 
   const login = async (username, password) => {
     const { data } = await api.post('/auth/login', { username, password })
-    localStorage.setItem('vmtips_token', data.token)
-    localStorage.setItem('vmtips_user', JSON.stringify(data))
+    saveAuth(data)
     setUser(data)
-    // Always set first group on login
     if (data.groups?.length > 0) {
       setActiveGroup(data.groups[0])
     }
@@ -40,9 +30,7 @@ export function AuthProvider({ children }) {
   }
 
   const logout = () => {
-    localStorage.removeItem('vmtips_token')
-    localStorage.removeItem('vmtips_user')
-    localStorage.removeItem('vmtips_group')
+    clearAuth()
     setUser(null)
     setActiveGroupState(null)
   }
@@ -55,4 +43,3 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthCtx)
-
