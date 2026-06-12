@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
-import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown } from 'lucide-react'
+import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2 } from 'lucide-react'
 import { useState } from 'react'
 
 export default function Layout() {
@@ -16,6 +16,7 @@ export default function Layout() {
     { to: '/alla-tips',  label: 'Alla Tips',  icon: Users },
     { to: '/schema',     label: 'Schema',     icon: Calendar },
     { to: '/topplista',  label: 'Topplista',  icon: Trophy },
+    { to: '/statistik',  label: 'Statistik',  icon: BarChart2 },
     ...(user?.isAdmin ? [{ to: '/admin', label: 'Admin', icon: ShieldCheck }] : []),
   ]
 
