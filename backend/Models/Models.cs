@@ -12,6 +12,23 @@ public class User
     public bool IsAdmin { get; set; }
     public ICollection<Tip> Tips { get; set; } = new List<Tip>();
     public SidoTip? SidoTip { get; set; }
+    public ICollection<UserGroup> UserGroups { get; set; } = new List<UserGroup>();
+}
+
+public class Group
+{
+    public int Id { get; set; }
+    [Required] public string Name { get; set; } = "";
+    public ICollection<UserGroup> UserGroups { get; set; } = new List<UserGroup>();
+    public SidoAnswer? SidoAnswer { get; set; }
+}
+
+public class UserGroup
+{
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    public int GroupId { get; set; }
+    public Group Group { get; set; } = null!;
 }
 
 public class Match
@@ -36,21 +53,6 @@ public class Tip
     public Match Match { get; set; } = null!;
     public int HomeGoals { get; set; }
     public int AwayGoals { get; set; }
-    [NotMapped]
-    public int Points => CalcPoints();
-    private int CalcPoints()
-    {
-        if (Match?.HomeGoals == null || Match?.AwayGoals == null) return 0;
-        int rh = Match.HomeGoals.Value, rb = Match.AwayGoals.Value;
-        if (HomeGoals == rh && AwayGoals == rb) return 5;
-        int pts = 0;
-        if (HomeGoals == rh) pts++;
-        if (AwayGoals == rb) pts++;
-        int tipSign  = Math.Sign(HomeGoals - AwayGoals);
-        int realSign = Math.Sign(rh - rb);
-        if (tipSign == realSign) pts++;
-        return pts;
-    }
 }
 
 public class SidoTip
@@ -63,9 +65,12 @@ public class SidoTip
     public string? GultKort { get; set; }
 }
 
+// One SidoAnswer per group
 public class SidoAnswer
 {
-    public int Id { get; set; } = 1;
+    public int Id { get; set; }
+    public int GroupId { get; set; }
+    public Group Group { get; set; } = null!;
     public string? Skyttekung { get; set; }
     public string? Assistkung { get; set; }
     public string? GultKort { get; set; }

@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using VmTips.Data;
@@ -19,7 +18,6 @@ public static class Endpoints
         MapAdmin(app);
     }
 
-    // ── AUTH ──────────────────────────────────────────────────────
     static void MapAuth(WebApplication app)
     {
         app.MapPost("/api/auth/login", async (LoginRequest req, AppDbContext db, AuthService auth) =>
@@ -27,20 +25,29 @@ public static class Endpoints
             var user = await db.Users.FirstOrDefaultAsync(u => u.Username == req.Username);
             if (user == null || !auth.VerifyPassword(req.Password, user.PasswordHash, user.Salt))
                 return Results.Unauthorized();
+            var groups = await db.UserGroups
+                .Where(ug => ug.UserId == user.Id)
+                .Include(ug => ug.Group)
+                .Select(ug => new GroupDto(ug.Group.Id, ug.Group.Name))
+                .ToListAsync();
             var token = auth.GenerateToken(user);
-            return Results.Ok(new LoginResponse(token, user.Username, user.IsAdmin, user.Id));
+            return Results.Ok(new LoginResponse(token, user.Username, user.IsAdmin, user.Id, groups));
         });
 
-        app.MapGet("/api/auth/me", (ClaimsPrincipal user) =>
+        app.MapGet("/api/auth/me", async (ClaimsPrincipal user, AppDbContext db) =>
         {
             var id   = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var name = user.FindFirstValue(ClaimTypes.Name)!;
             var admin = bool.Parse(user.FindFirstValue("isAdmin")!);
-            return Results.Ok(new { UserId = id, Username = name, IsAdmin = admin });
+            var groups = await db.UserGroups
+                .Where(ug => ug.UserId == id)
+                .Include(ug => ug.Group)
+                .Select(ug => new GroupDto(ug.Group.Id, ug.Group.Name))
+                .ToListAsync();
+            return Results.Ok(new { UserId = id, Username = name, IsAdmin = admin, Groups = groups });
         }).RequireAuthorization();
     }
 
-    // ── MATCHES ───────────────────────────────────────────────────
     static void MapMatches(WebApplication app)
     {
         app.MapGet("/api/matches", async (AppDbContext db) =>
@@ -53,17 +60,20 @@ public static class Endpoints
         });
     }
 
-    // ── TIPS ──────────────────────────────────────────────────────
     static void MapTips(WebApplication app)
     {
-        // Get all users' tips (for leaderboard view)
-        app.MapGet("/api/tips/all", async (AppDbContext db) =>
+        // All users' tips filtered by group
+        app.MapGet("/api/tips/all", async (int groupId, AppDbContext db) =>
         {
-            var users   = await db.Users.ToListAsync();
+            var groupUserIds = await db.UserGroups
+                .Where(ug => ug.GroupId == groupId)
+                .Select(ug => ug.UserId)
+                .ToListAsync();
+            var users   = await db.Users.Where(u => groupUserIds.Contains(u.Id)).ToListAsync();
             var matches = await db.Matches.ToListAsync();
-            var tips    = await db.Tips.ToListAsync();
-            var sidos   = await db.SidoTips.ToListAsync();
-            var answer  = await db.SidoAnswers.FirstOrDefaultAsync();
+            var tips    = await db.Tips.Where(t => groupUserIds.Contains(t.UserId)).ToListAsync();
+            var sidos   = await db.SidoTips.Where(s => groupUserIds.Contains(s.UserId)).ToListAsync();
+            var answer  = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
 
             return users.Select(u =>
             {
@@ -71,8 +81,8 @@ public static class Endpoints
                 var sido     = sidos.FirstOrDefault(s => s.UserId == u.Id);
                 var matchPts = userTips.Sum(t =>
                 {
-                    var match = matches.FirstOrDefault(m => m.Id == t.MatchId);
-                    return match == null ? 0 : PointsService.CalcTipPoints(t, match);
+                    var m = matches.FirstOrDefault(m => m.Id == t.MatchId);
+                    return m == null ? 0 : PointsService.CalcTipPoints(t, m);
                 });
                 var sidoPts = PointsService.CalcSidoPoints(sido, answer);
                 return new UserTipsDto(
@@ -80,33 +90,28 @@ public static class Endpoints
                     userTips.Select(t =>
                     {
                         var m = matches.First(m => m.Id == t.MatchId);
-                        return new TipDto(t.MatchId, t.HomeGoals, t.AwayGoals,
-                            PointsService.CalcTipPoints(t, m));
+                        return new TipDto(t.MatchId, t.HomeGoals, t.AwayGoals, PointsService.CalcTipPoints(t, m));
                     }).ToList(),
                     sido == null ? null : new SidoTipDto(sido.Skyttekung, sido.Assistkung, sido.GultKort),
                     matchPts, sidoPts, matchPts + sidoPts);
             });
         }).RequireAuthorization();
 
-        // Get my tips
-        app.MapGet("/api/tips/me", async (ClaimsPrincipal user, AppDbContext db) =>
+        app.MapGet("/api/tips/me", async (ClaimsPrincipal user, int groupId, AppDbContext db) =>
         {
             var userId  = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var matches = await db.Matches.ToListAsync();
             var tips    = await db.Tips.Where(t => t.UserId == userId).ToListAsync();
             var sido    = await db.SidoTips.FirstOrDefaultAsync(s => s.UserId == userId);
-            var answer  = await db.SidoAnswers.FirstOrDefaultAsync();
-
+            var answer  = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
             var matchPts = tips.Sum(t =>
             {
                 var m = matches.FirstOrDefault(m => m.Id == t.MatchId);
                 return m == null ? 0 : PointsService.CalcTipPoints(t, m);
             });
             var sidoPts = PointsService.CalcSidoPoints(sido, answer);
-
             return Results.Ok(new UserTipsDto(
-                userId,
-                user.FindFirstValue(ClaimTypes.Name)!,
+                userId, user.FindFirstValue(ClaimTypes.Name)!,
                 tips.Select(t =>
                 {
                     var m = matches.First(m => m.Id == t.MatchId);
@@ -116,36 +121,25 @@ public static class Endpoints
                 matchPts, sidoPts, matchPts + sidoPts));
         }).RequireAuthorization();
 
-        // Save tip for a match
         app.MapPost("/api/tips", async (SaveTipRequest req, ClaimsPrincipal user, AppDbContext db) =>
         {
             var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var match  = await db.Matches.FindAsync(req.MatchId);
             if (match == null) return Results.NotFound();
             if (match.IsLocked) return Results.BadRequest("Matchen är låst.");
-
             var tip = await db.Tips.FirstOrDefaultAsync(t => t.UserId == userId && t.MatchId == req.MatchId);
-            if (tip == null)
-            {
-                tip = new Tip { UserId = userId, MatchId = req.MatchId };
-                db.Tips.Add(tip);
-            }
+            if (tip == null) { tip = new Tip { UserId = userId, MatchId = req.MatchId }; db.Tips.Add(tip); }
             tip.HomeGoals = req.HomeGoals;
             tip.AwayGoals = req.AwayGoals;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
 
-        // Save sido-tip
         app.MapPost("/api/tips/sido", async (SidoTipDto req, ClaimsPrincipal user, AppDbContext db) =>
         {
             var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var sido   = await db.SidoTips.FirstOrDefaultAsync(s => s.UserId == userId);
-            if (sido == null)
-            {
-                sido = new SidoTip { UserId = userId };
-                db.SidoTips.Add(sido);
-            }
+            if (sido == null) { sido = new SidoTip { UserId = userId }; db.SidoTips.Add(sido); }
             sido.Skyttekung = req.Skyttekung;
             sido.Assistkung = req.Assistkung;
             sido.GultKort   = req.GultKort;
@@ -154,18 +148,21 @@ public static class Endpoints
         }).RequireAuthorization();
     }
 
-    // ── LEADERBOARD ───────────────────────────────────────────────
     static void MapLeaderboard(WebApplication app)
     {
-        app.MapGet("/api/leaderboard", async (AppDbContext db) =>
+        app.MapGet("/api/leaderboard", async (int groupId, AppDbContext db) =>
         {
-            var users   = await db.Users.ToListAsync();
+            var groupUserIds = await db.UserGroups
+                .Where(ug => ug.GroupId == groupId)
+                .Select(ug => ug.UserId)
+                .ToListAsync();
+            var users   = await db.Users.Where(u => groupUserIds.Contains(u.Id)).ToListAsync();
             var matches = await db.Matches.ToListAsync();
-            var tips    = await db.Tips.ToListAsync();
-            var sidos   = await db.SidoTips.ToListAsync();
-            var answer  = await db.SidoAnswers.FirstOrDefaultAsync();
+            var tips    = await db.Tips.Where(t => groupUserIds.Contains(t.UserId)).ToListAsync();
+            var sidos   = await db.SidoTips.Where(s => groupUserIds.Contains(s.UserId)).ToListAsync();
+            var answer  = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
 
-            var entries = users.Select(u =>
+            return users.Select(u =>
             {
                 var userTips = tips.Where(t => t.UserId == u.Id).ToList();
                 var sido     = sidos.FirstOrDefault(s => s.UserId == u.Id);
@@ -181,23 +178,50 @@ public static class Endpoints
             .ThenByDescending(e => e.matchPts)
             .Select((e, i) => new LeaderboardEntry(i + 1, e.Username, e.matchPts, e.sidoPts, e.total))
             .ToList();
-
-            return entries;
         });
     }
 
-    // ── ADMIN ─────────────────────────────────────────────────────
     static void MapAdmin(WebApplication app)
     {
-        // List users
         app.MapGet("/api/admin/users", async (AppDbContext db, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
-            var users = await db.Users.Select(u => new AdminUserDto(u.Id, u.Username, u.IsAdmin)).ToListAsync();
+            var users = await db.Users
+                .Include(u => u.UserGroups).ThenInclude(ug => ug.Group)
+                .Select(u => new AdminUserDto(u.Id, u.Username, u.IsAdmin,
+                    u.UserGroups.Select(ug => ug.Group.Name).ToList()))
+                .ToListAsync();
             return Results.Ok(users);
         }).RequireAuthorization();
 
-        // Create user
+        app.MapGet("/api/admin/groups", async (AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            var groups = await db.Groups.Select(g => new GroupDto(g.Id, g.Name)).ToListAsync();
+            return Results.Ok(groups);
+        }).RequireAuthorization();
+
+        app.MapPost("/api/admin/groups", async (CreateGroupRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            var g = new Group { Name = req.Name };
+            db.Groups.Add(g);
+            await db.SaveChangesAsync();
+            await db.SidoAnswers.AddAsync(new SidoAnswer { GroupId = g.Id });
+            await db.SaveChangesAsync();
+            return Results.Ok(new GroupDto(g.Id, g.Name));
+        }).RequireAuthorization();
+
+        app.MapPost("/api/admin/groups/adduser", async (AddUserToGroupRequest req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            if (await db.UserGroups.AnyAsync(ug => ug.UserId == req.UserId && ug.GroupId == req.GroupId))
+                return Results.Ok();
+            db.UserGroups.Add(new UserGroup { UserId = req.UserId, GroupId = req.GroupId });
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+
         app.MapPost("/api/admin/users", async (CreateUserRequest req, AppDbContext db, AuthService auth, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
@@ -213,10 +237,12 @@ public static class Endpoints
             };
             db.Users.Add(newUser);
             await db.SaveChangesAsync();
-            return Results.Ok(new AdminUserDto(newUser.Id, newUser.Username, newUser.IsAdmin));
+            foreach (var gid in req.GroupIds)
+                db.UserGroups.Add(new UserGroup { UserId = newUser.Id, GroupId = gid });
+            await db.SaveChangesAsync();
+            return Results.Ok(new AdminUserDto(newUser.Id, newUser.Username, newUser.IsAdmin, req.GroupIds.Select(g => g.ToString()).ToList()));
         }).RequireAuthorization();
 
-        // Update user password
         app.MapPut("/api/admin/users/{id}/password", async (int id, UpdatePasswordRequest req, AppDbContext db, AuthService auth, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
@@ -228,7 +254,6 @@ public static class Endpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        // Set match result + lock
         app.MapPut("/api/admin/matches/{id}", async (int id, SetResultRequest req, AppDbContext db, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
@@ -243,12 +268,11 @@ public static class Endpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        // Set sido answers
-        app.MapPut("/api/admin/sido", async (SidoAnswerDto req, AppDbContext db, ClaimsPrincipal user) =>
+        app.MapPut("/api/admin/sido/{groupId}", async (int groupId, SidoAnswerDto req, AppDbContext db, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
-            var ans = await db.SidoAnswers.FindAsync(1);
-            if (ans == null) { ans = new SidoAnswer { Id = 1 }; db.SidoAnswers.Add(ans); }
+            var ans = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
+            if (ans == null) { ans = new SidoAnswer { GroupId = groupId }; db.SidoAnswers.Add(ans); }
             ans.Skyttekung = req.Skyttekung;
             ans.Assistkung = req.Assistkung;
             ans.GultKort   = req.GultKort;
@@ -256,11 +280,10 @@ public static class Endpoints
             return Results.Ok();
         }).RequireAuthorization();
 
-        // Get sido answers
-        app.MapGet("/api/admin/sido", async (AppDbContext db, ClaimsPrincipal user) =>
+        app.MapGet("/api/admin/sido/{groupId}", async (int groupId, AppDbContext db, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
-            var ans = await db.SidoAnswers.FindAsync(1);
+            var ans = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
             return Results.Ok(new SidoAnswerDto(ans?.Skyttekung, ans?.Assistkung, ans?.GultKort));
         }).RequireAuthorization();
     }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 const MEDALS = ['🥇','🥈','🥉']
 const MEDAL_STYLES = [
@@ -13,11 +14,11 @@ const MEDAL_STYLES = [
 export default function Leaderboard() {
   const [board, setBoard]       = useState([])
   const [loading, setLoading]   = useState(true)
-  const { user } = useAuth()
+  const { user, activeGroup } = useAuth()
 
   useEffect(() => {
-    api.get('/leaderboard').then(r => { setBoard(r.data); setLoading(false) })
-    const iv = setInterval(() => api.get('/leaderboard').then(r => setBoard(r.data)), 30000)
+    api.get(`/leaderboard?groupId=${activeGroup?.id || 1}`).then(r => { setBoard(r.data); setLoading(false) })
+    const iv = setInterval(() => api.get(`/leaderboard?groupId=${activeGroup?.id || 1}`).then(r => setBoard(r.data)), 30000)
     return () => clearInterval(iv)
   }, [])
 

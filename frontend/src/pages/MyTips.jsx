@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 import { Lock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const ROUNDS_ORDER = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
@@ -36,10 +37,11 @@ export default function MyTips() {
   const [saved, setSaved]         = useState({})
   const [sidoEdit, setSidoEdit]   = useState(false)
   const [sidoForm, setSidoForm]   = useState({ skyttekung:'', assistkung:'', gultKort:'' })
+  const { activeGroup } = useAuth()
   const [collapsed, setCollapsed] = useState({})
 
   const load = useCallback(async () => {
-    const [md, mc] = await Promise.all([api.get('/tips/me'), api.get('/matches')])
+    const [md, mc] = await Promise.all([api.get(`/tips/me?groupId=${activeGroup?.id || 1}`), api.get('/matches')])
     setMyData(md.data)
     setMatches(mc.data)
     setSidoForm({

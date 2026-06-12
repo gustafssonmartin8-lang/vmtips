@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/useAuth'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
@@ -17,10 +18,10 @@ export default function AllTips() {
   const [allData, setAllData] = useState([])
   const [matches, setMatches] = useState([])
   const [selected, setSelected] = useState(null)
-  const { user } = useAuth()
+  const { user, activeGroup } = useAuth()
 
   useEffect(() => {
-    Promise.all([api.get('/tips/all'), api.get('/matches')]).then(([a, m]) => {
+    Promise.all([api.get(`/tips/all?groupId=${activeGroup?.id || 1}`), api.get('/matches')]).then(([a, m]) => {
       setAllData(a.data)
       setMatches(m.data)
       setSelected(a.data.find(u => u.userId === user.userId)?.userId || a.data[0]?.userId)
