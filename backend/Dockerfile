@@ -1,10 +1,9 @@
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+﻿FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /app
 COPY *.csproj .
 RUN dotnet restore
 COPY . .
-ARG CACHEBUST=1
-RUN dotnet publish -c Release -o out
+RUN echo "cachebust=20260612105613" && dotnet publish -c Release -o out
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0
 WORKDIR /app
