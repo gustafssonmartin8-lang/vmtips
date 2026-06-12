@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
-import { useAuth } from '../hooks/useAuth'
 
 const MEDALS = ['🥇','🥈','🥉']
 const MEDAL_STYLES = [
