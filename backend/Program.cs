@@ -8,8 +8,22 @@ using VmTips.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Railway tillhandahåller DATABASE_URL, lokalt används appsettings.json
+var connectionString =
+    Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("Default")!;
+
+// Railway's DATABASE_URL är på formatet postgres://user:pass@host:port/db
+// Npgsql behöver det konverterat
+if (connectionString.StartsWith("postgres://") || connectionString.StartsWith("postgresql://"))
+{
+    var uri = new Uri(connectionString);
+    var userInfo = uri.UserInfo.Split(':');
+    connectionString = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+}
+
 builder.Services.AddDbContext<AppDbContext>(opts =>
-    opts.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+    opts.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<AuthService>();
 
