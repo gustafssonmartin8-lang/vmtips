@@ -3,7 +3,7 @@ import api from '../lib/api'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
-  'Frankrike':'🇫🇷','Argentina':'🇦🇷','Spanien':'🇪🇸','England':'🇬🇧','Portugal':'🇵🇹',
+  'Frankrike':'🇫🇷','Argentina':'🇦🇷','Spanien':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Portugal':'🇵🇹',
   'Belgien':'🇧🇪','Nederländerna':'🇳🇱','Tyskland':'🇩🇪','Japan':'🇯🇵','Tunisien':'🇹🇳',
   'Marocko':'🇲🇦','Sydkorea':'🇰🇷','Australien':'🇦🇺','Kroatien':'🇭🇷','Uruguay':'🇺🇾',
   'Schweiz':'🇨🇭','Saudiarabien':'🇸🇦','Ghana':'🇬🇭','Senegal':'🇸🇳','Norge':'🇳🇴',
@@ -12,7 +12,8 @@ const FLAG = t => ({
   'Iran':'🇮🇷','Kap Verde':'🇨🇻','Irak':'🇮🇶','Algeriet':'🇩🇿','Jordanien':'🇯🇴',
   'Elfenbenskusten':'🇨🇮','Paraguay':'🇵🇾','Egypten':'🇪🇬','Nya Zeeland':'🇳🇿',
   'Bosnien-Hercegovina':'🇧🇦','Uzbekistan':'🇺🇿','Kongo-Kinshasa':'🇨🇩','Panama':'🇵🇦',
-}[t] || '🏳️')
+  'Nya Zeeland':'🇳🇿','Kap Verde':'🇨🇻','Bosnien-Hercegovina':'🇧🇦',
+}[t] || '')
 
 // Fullständigt spelschema med svenska tider (UTC+2 sommartid)
 const SCHEDULE = [
@@ -238,12 +239,12 @@ export default function Schedule() {
       {nextMatch && filter === 'upcoming' && (
         <div className="card border-gold-500/50 bg-gradient-to-r from-pitch-800 to-pitch-700">
           <div className="text-xs text-gold-400 font-bold uppercase tracking-widest mb-2">⚡ Nästa match</div>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">{FLAG(nextMatch.homeTeam)}</span>
+          <div className="flex items-center gap-3 flex-wrap">
+            {FLAG(nextMatch.homeTeam) && <span className="text-2xl">{FLAG(nextMatch.homeTeam)}</span>}
             <span className="font-bold text-white">{nextMatch.homeTeam}</span>
             <span className="text-white/40 mx-1">vs</span>
             <span className="font-bold text-white">{nextMatch.awayTeam}</span>
-            <span className="text-2xl">{FLAG(nextMatch.awayTeam)}</span>
+            {FLAG(nextMatch.awayTeam) && <span className="text-2xl">{FLAG(nextMatch.awayTeam)}</span>}
             <span className="ml-auto text-gold-400 font-bold">{nextMatch.time}</span>
             <span className="text-white/40 text-sm">{nextMatch.date}</span>
           </div>
@@ -281,10 +282,10 @@ export default function Schedule() {
 
                 {/* Home */}
                 <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-                  <span className="text-sm font-medium text-right truncate hidden sm:block text-white/90">
+                  <span className="text-xs sm:text-sm font-medium text-right truncate text-white/90">
                     {m.homeTeam || '?'}
                   </span>
-                  <span className="text-xl shrink-0">{FLAG(m.homeTeam)}</span>
+                  {FLAG(m.homeTeam) && <span className="text-lg shrink-0">{FLAG(m.homeTeam)}</span>}
                 </div>
 
                 {/* Score or vs */}
@@ -300,8 +301,8 @@ export default function Schedule() {
 
                 {/* Away */}
                 <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-xl shrink-0">{FLAG(m.awayTeam)}</span>
-                  <span className="text-sm font-medium truncate hidden sm:block text-white/90">
+                  {FLAG(m.awayTeam) && <span className="text-lg shrink-0">{FLAG(m.awayTeam)}</span>}
+                  <span className="text-xs sm:text-sm font-medium truncate text-white/90">
                     {m.awayTeam || '?'}
                   </span>
                 </div>
