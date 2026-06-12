@@ -1,6 +1,3 @@
-[build]
+﻿[build]
 builder = "dockerfile"
-dockerfilePath = "backend/Dockerfile"
-
-[deploy]
-startCommand = "dotnet VmTips.dll"
+dockerfilePath = "frontend/Dockerfile"
