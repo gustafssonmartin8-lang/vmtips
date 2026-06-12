@@ -148,7 +148,8 @@ export default function Schedule() {
     api.get('/matches').then(r => setMatches(r.data))
   }, [])
 
-  const enriched = SCHEDULE.map(s => {
+  const sorted = [...SCHEDULE].sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
+  const enriched = sorted.map(s => {
     const apiMatch = matches.find(m => m.id === s.id && m.round === s.round)
       || matches.find(m => m.id === s.id)
     return {
