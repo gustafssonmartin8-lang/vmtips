@@ -13,6 +13,8 @@ const ROUNDS = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
   'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L',
   'Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
 
+const sortBySchedule = (matches) => [...matches].sort((a, b) => a.id - b.id)
+
 export default function AllTips() {
   const [allData, setAllData] = useState([])
   const [matches, setMatches] = useState([])
