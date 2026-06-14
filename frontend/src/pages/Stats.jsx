@@ -177,8 +177,8 @@ export default function Stats() {
                     }`} />
                 </div>
                 {/* Mini breakdown */}
-                <div className="flex gap-3 text-xs text-white/25 pl-8">
-                  <span>🎯 {s.exactResults} exakta</span>
+                <div className="flex gap-3 text-xs text-white/25 pl-8 flex-wrap">
+                  <span>🎯 {s.exactResults}× femma</span>
                   <span>✅ {s.correctWinner} rätt vinnare</span>
                   <span>⚽ {s.matchPoints}p match</span>
                 </div>
@@ -250,6 +250,51 @@ export default function Stats() {
                       {s.streakMatches.length > 1 && ` → match ${s.streakMatches[s.streakMatches.length-1]?.id}`}
                     </div>
                   )}
+                </motion.div>
+              )
+            })}
+        </div>
+      </section>
+
+
+      {/* ── FLEST ANTAL 5OR ─────────────────────────────────── */}
+      <section className="card">
+        <h2 className="font-display text-2xl text-gold-400 tracking-wide mb-1">
+          🎯 Flest exakta träffar (5p)
+        </h2>
+        <p className="text-white/30 text-xs mb-5">
+          Antal gånger man gissat exakt rätt resultat – den svåraste poängen att få.
+        </p>
+        <div className="space-y-3">
+          {[...playerStats]
+            .sort((a,b) => b.exactResults - a.exactResults)
+            .map((s, i) => {
+              const maxFives = Math.max(...playerStats.map(p => p.exactResults)) || 1
+              const pct = (s.exactResults / maxFives) * 100
+              return (
+                <motion.div key={s.username}
+                  initial={{ opacity:0, x:-20 }}
+                  animate={{ opacity:1, x:0 }}
+                  transition={{ delay: i * 0.05 }}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold w-6 text-center ${rankColor(i)}`}>{rankMedal(i)}</span>
+                      <span className={`font-medium ${i < 3 ? rankColor(i) : 'text-white'}`}>{s.username}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className={`font-display text-2xl ${i===0 ? 'text-gold-400' : 'text-white/80'}`}>
+                        {s.exactResults}
+                      </span>
+                      <span className="text-white/30 text-xs">× 🎯</span>
+                    </div>
+                  </div>
+                  <div className="h-2 bg-pitch-700 rounded-full overflow-hidden ml-8">
+                    <motion.div
+                      initial={{ width:0 }}
+                      animate={{ width:`${pct}%` }}
+                      transition={{ delay: i*0.05+0.2, duration:0.6 }}
+                      className={`h-full rounded-full ${i===0 ? 'bg-emerald-500' : 'bg-pitch-500'}`} />
+                  </div>
                 </motion.div>
               )
             })}

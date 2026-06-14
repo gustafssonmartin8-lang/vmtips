@@ -8,6 +8,9 @@ const ROUNDS_ORDER = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F
   'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L',
   'Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
 
+// Schedule order: sort matches by ID (follows chronological order)
+const sortBySchedule = (matches) => [...matches].sort((a, b) => a.id - b.id)
+
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
   'Frankrike':'🇫🇷','Argentina':'🇦🇷','Spanien':'🇪🇸','England':'🇬🇧','Portugal':'🇵🇹',
@@ -85,7 +88,7 @@ export default function MyTips() {
   }
 
   const grouped = ROUNDS_ORDER.reduce((acc, r) => {
-    const ms = matches.filter(m => m.round === r)
+    const ms = sortBySchedule(matches.filter(m => m.round === r))
     if (ms.length) acc[r] = ms
     return acc
   }, {})

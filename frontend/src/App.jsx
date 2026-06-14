@@ -8,6 +8,7 @@ import Schedule from './pages/Schedule'
 import Leaderboard from './pages/Leaderboard'
 import Admin from './pages/Admin'
 import Stats from './pages/Stats'
+import Achievements from './pages/Achievements'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth()
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="topplista"   element={<Leaderboard />} />
             <Route path="admin"       element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             <Route path="statistik"   element={<Stats />} />
+            <Route path="achievements" element={<Achievements />} />
           </Route>
         </Routes>
       </BrowserRouter>

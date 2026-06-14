@@ -194,25 +194,47 @@ export default function Schedule() {
       </div>
 
       {/* Nästa match */}
-      {nextMatch && filter === 'upcoming' && (
-        <div className="card border-gold-500/40 bg-gradient-to-r from-pitch-800 to-pitch-700">
-          <div className="text-xs text-gold-400 font-bold uppercase tracking-widest mb-2">⚡ Nästa match</div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {FLAG(nextMatch.homeTeam) && <span className="text-2xl">{FLAG(nextMatch.homeTeam)}</span>}
-            <span className="font-bold text-white">{nextMatch.homeTeam || '?'}</span>
-            <span className="text-white/30">vs</span>
-            <span className="font-bold text-white">{nextMatch.awayTeam || '?'}</span>
-            {FLAG(nextMatch.awayTeam) && <span className="text-2xl">{FLAG(nextMatch.awayTeam)}</span>}
-            <span className="ml-auto font-bold text-gold-400">{nextMatch.time}</span>
-            {nextMatch.tv && (
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${tvStyle(nextMatch.tv)}`}>
-                {nextMatch.tv}
-              </span>
+      {nextMatch && filter === 'upcoming' && (() => {
+        const isSweden = nextMatch.homeTeam === 'Sverige' || nextMatch.awayTeam === 'Sverige'
+        return (
+          <div className={`card ${isSweden
+            ? 'border-yellow-400/60 bg-gradient-to-r from-blue-900/60 via-blue-800/40 to-yellow-900/30'
+            : 'border-gold-500/40 bg-gradient-to-r from-pitch-800 to-pitch-700'}`}>
+            {isSweden ? (
+              <>
+                <div className="text-xs font-bold uppercase tracking-widest mb-2 text-yellow-400">
+                  🇸🇪 DAGS FÖR SVERIGE!
+                </div>
+                <div className="text-sm text-blue-200/70 mb-3 italic">
+                  {nextMatch.homeTeam === 'Sverige'
+                    ? '⚽ Vi spelar hemma – ge järnet blågult!'
+                    : '✈️ Borta är bra men hemma är bäst – Sverige tar det här!'}
+                </div>
+              </>
+            ) : (
+              <div className="text-xs text-gold-400 font-bold uppercase tracking-widest mb-2">⚡ Nästa match</div>
             )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {FLAG(nextMatch.homeTeam) && <span className="text-2xl">{FLAG(nextMatch.homeTeam)}</span>}
+              <span className={`font-bold text-lg ${isSweden && nextMatch.homeTeam === 'Sverige' ? 'text-yellow-300' : 'text-white'}`}>
+                {nextMatch.homeTeam || '?'}
+              </span>
+              <span className="text-white/30 font-bold">vs</span>
+              <span className={`font-bold text-lg ${isSweden && nextMatch.awayTeam === 'Sverige' ? 'text-yellow-300' : 'text-white'}`}>
+                {nextMatch.awayTeam || '?'}
+              </span>
+              {FLAG(nextMatch.awayTeam) && <span className="text-2xl">{FLAG(nextMatch.awayTeam)}</span>}
+              <span className={`ml-auto font-bold ${isSweden ? 'text-yellow-400' : 'text-gold-400'}`}>{nextMatch.time}</span>
+              {nextMatch.tv && (
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${tvStyle(nextMatch.tv)}`}>
+                  {nextMatch.tv}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-white/30 mt-1">{nextMatch.round} · {nextMatch.date}</div>
           </div>
-          <div className="text-xs text-white/30 mt-1">{nextMatch.round} · {nextMatch.date}</div>
-        </div>
-      )}
+        )
+      })()}
 
       {/* Filter */}
       <div className="flex gap-2">

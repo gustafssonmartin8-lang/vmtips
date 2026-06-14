@@ -30,7 +30,7 @@ export default function AllTips() {
   const userData = allData.find(u => u.userId === selected)
 
   const grouped = ROUNDS.reduce((acc, r) => {
-    const ms = matches.filter(m => m.round === r)
+    const ms = sortBySchedule(matches.filter(m => m.round === r))
     if (ms.length) acc[r] = ms
     return acc
   }, {})
