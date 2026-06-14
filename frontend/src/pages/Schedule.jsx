@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
+import { useAuth } from '../hooks/useAuth'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
@@ -143,10 +144,17 @@ const SCHEDULE = [
 export default function Schedule() {
   const [matches, setMatches] = useState([])
   const [filter, setFilter] = useState('upcoming')
+  const [allTips, setAllTips] = useState([])
+  const { activeGroup, user } = useAuth()
 
   useEffect(() => {
     api.get('/matches').then(r => setMatches(r.data))
   }, [])
+
+  useEffect(() => {
+    if (!activeGroup) return
+    api.get(`/tips/all?groupId=${activeGroup.id}`).then(r => setAllTips(r.data))
+  }, [activeGroup])
 
   const sorted = [...SCHEDULE].sort((a,b) => new Date(`${a.date}T${a.time}`) - new Date(`${b.date}T${b.time}`))
   const enriched = sorted.map(s => {
@@ -232,6 +240,36 @@ export default function Schedule() {
               )}
             </div>
             <div className="text-xs text-white/30 mt-1">{nextMatch.round} · {nextMatch.date}</div>
+
+            {/* Tips per person */}
+            {allTips.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-white/10">
+                <div className="text-xs text-white/40 mb-2 uppercase tracking-wider">Deltagarnas tips</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                  {allTips.map(u => {
+                    const tip = u.tips?.find(t => t.matchId === nextMatch.id)
+                    return (
+                      <div key={u.userId}
+                        className={`flex items-center justify-between px-3 py-1.5 rounded-lg text-sm
+                          ${u.username === user?.username
+                            ? 'bg-gold-500/20 border border-gold-500/30'
+                            : 'bg-pitch-700/60'}`}>
+                        <span className={`font-medium ${u.username === user?.username ? 'text-gold-400' : 'text-white/70'}`}>
+                          {u.username}
+                        </span>
+                        {tip ? (
+                          <span className="font-bold text-white">
+                            {tip.homeGoals}–{tip.awayGoals}
+                          </span>
+                        ) : (
+                          <span className="text-white/25 text-xs italic">–</span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )
       })()}
