@@ -211,7 +211,7 @@ public class ResultFetcherService(
 public static class LiveScoreCache
 {
     private static readonly Dictionary<int, (int Home, int Away, string Status, int? Elapsed)> _scores = new();
-    private static readonly Lock _lock = new();
+    private static readonly object _lock = new();
 
     public static void Update(int matchId, int home, int away, string status, int? elapsed)
     {
