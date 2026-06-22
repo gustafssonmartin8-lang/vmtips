@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import MatchPoll from '../components/MatchPoll'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
@@ -246,6 +247,9 @@ export default function Schedule() {
               )}
             </div>
             <div className="text-xs text-white/30 mt-1">{nextMatch.round} · {nextMatch.date}</div>
+
+            {/* Poll */}
+            <MatchPoll match={nextMatch} />
 
             {/* Tips per person */}
             {allTips.length > 0 && (

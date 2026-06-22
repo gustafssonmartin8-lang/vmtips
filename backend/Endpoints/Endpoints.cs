@@ -4,6 +4,7 @@ using VmTips.Data;
 using VmTips.DTOs;
 using VmTips.Models;
 using VmTips.Services;
+record VoteRequest(string Vote);
 
 namespace VmTips.Endpoints;
 
@@ -16,6 +17,7 @@ public static class Endpoints
         MapTips(app);
         MapLeaderboard(app);
         MapLiveScores(app);
+        MapPolls(app);
         MapApiStatus(app);
         MapAdmin(app);
     }
@@ -307,6 +309,68 @@ public static class Endpoints
         }).RequireAuthorization();
     }
 
+
+
+    static void MapPolls(WebApplication app)
+    {
+        // Get poll results for a match (anonymous - just counts)
+        app.MapGet("/api/polls/{matchId}", async (int matchId, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+            var votes = await db.MatchPolls
+                .Where(p => p.MatchId == matchId)
+                .GroupBy(p => p.Vote)
+                .Select(g => new { vote = g.Key, count = g.Count() })
+                .ToListAsync();
+
+            var myVote = await db.MatchPolls
+                .Where(p => p.MatchId == matchId && p.UserId == userId)
+                .Select(p => p.Vote)
+                .FirstOrDefaultAsync();
+
+            var total = votes.Sum(v => v.count);
+            return Results.Ok(new {
+                matchId,
+                myVote,
+                total,
+                votes = new {
+                    home = votes.FirstOrDefault(v => v.vote == "1")?.count ?? 0,
+                    draw = votes.FirstOrDefault(v => v.vote == "X")?.count ?? 0,
+                    away = votes.FirstOrDefault(v => v.vote == "2")?.count ?? 0,
+                }
+            });
+        }).RequireAuthorization();
+
+        // Cast a vote
+        app.MapPost("/api/polls/{matchId}", async (int matchId, VoteRequest req, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            if (req.Vote != "1" && req.Vote != "X" && req.Vote != "2")
+                return Results.BadRequest("Vote must be 1, X or 2");
+
+            var userId = int.Parse(user.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            // Check if match is locked
+            var match = await db.Matches.FindAsync(matchId);
+            if (match == null) return Results.NotFound();
+            if (match.IsLocked) return Results.BadRequest("Match has started");
+
+            // Only one vote per user per match
+            var existing = await db.MatchPolls
+                .FirstOrDefaultAsync(p => p.MatchId == matchId && p.UserId == userId);
+
+            if (existing != null)
+                return Results.BadRequest("Already voted");
+
+            db.MatchPolls.Add(new MatchPoll {
+                MatchId = matchId,
+                UserId = userId,
+                Vote = req.Vote
+            });
+
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+    }
 
     static void MapApiStatus(WebApplication app)
     {

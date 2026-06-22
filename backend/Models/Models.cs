@@ -75,3 +75,14 @@ public class SidoAnswer
     public string? Assistkung { get; set; }
     public string? GultKort { get; set; }
 }
+// Match poll votes (1X2)
+public class MatchPoll
+{
+    public int Id { get; set; }
+    public int MatchId { get; set; }
+    public Match Match { get; set; } = null!;
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    // "1" = home win, "X" = draw, "2" = away win
+    public string Vote { get; set; } = string.Empty;
+}
