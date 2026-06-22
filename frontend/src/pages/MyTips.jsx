@@ -87,8 +87,13 @@ export default function MyTips() {
     await load()
   }
 
+  const tippedMatchIds = new Set(myData?.tips?.map(t => t.matchId) || [])
+
   const grouped = ROUNDS_ORDER.reduce((acc, r) => {
-    const ms = sortBySchedule(matches.filter(m => m.round === r))
+    let ms = sortBySchedule(matches.filter(m => m.round === r))
+    // Apply filter
+    if (tipFilter === 'untipped') ms = ms.filter(m => !m.isLocked && !tippedMatchIds.has(m.id))
+    if (tipFilter === 'played') ms = ms.filter(m => m.homeGoals !== null)
     if (ms.length) acc[r] = ms
     return acc
   }, {})

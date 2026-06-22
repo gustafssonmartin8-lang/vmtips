@@ -10,6 +10,7 @@ import Admin from './pages/Admin'
 import Stats from './pages/Stats'
 import Achievements from './pages/Achievements'
 import Groups from './pages/Groups'
+import Dashboard from './pages/Dashboard'
 import Bracket from './pages/Bracket'
 
 function ProtectedRoute({ children, adminOnly = false }) {
@@ -26,7 +27,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-            <Route index element={<Navigate to="/mina-tips" replace />} />
+            <Route index element={<Dashboard />} />
             <Route path="mina-tips"   element={<MyTips />} />
             <Route path="alla-tips"   element={<AllTips />} />
             <Route path="schema"      element={<Schedule />} />
