@@ -145,6 +145,7 @@ export default function Schedule() {
   const [matches, setMatches] = useState([])
   const [filter, setFilter] = useState('upcoming')
   const [allTips, setAllTips] = useState([])
+  const [expandedMatch, setExpandedMatch] = useState(null)
   const { activeGroup, user } = useAuth()
 
   useEffect(() => {
@@ -293,9 +294,12 @@ export default function Schedule() {
           </div>
           <div className="space-y-1.5">
             {dayMatches.map((m, i) => (
-              <div key={`${m.id}-${m.time}-${i}`}
-                className="flex items-center gap-2 py-2.5 px-3 rounded-xl
-                           bg-pitch-800 border border-pitch-600 hover:border-pitch-500 transition-colors">
+              <div key={`${m.id}-${m.time}-${i}`} className="space-y-0">
+              <div
+                className={`flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer
+                           bg-pitch-800 border border-pitch-600 transition-colors
+                           ${m.homeGoals !== null ? 'hover:border-gold-500/50' : 'hover:border-pitch-500'}`}
+                onClick={() => m.homeGoals !== null && setExpandedMatch(ex => ex === m.id ? null : m.id)}>
 
                 {/* Tid */}
                 <div className="text-gold-400 font-bold text-sm w-11 shrink-0">{m.time}</div>
@@ -345,6 +349,35 @@ export default function Schedule() {
                     {m.tv}
                   </div>
                 )}
+                {m.homeGoals !== null && (
+                  <div className="text-white/20 text-xs shrink-0">▾</div>
+                )}
+              </div>
+
+              {/* Expandable points */}
+              {expandedMatch === m.id && allTips.length > 0 && (
+                <div className="bg-pitch-700/50 rounded-b-xl px-3 py-2.5 border border-t-0 border-pitch-600 -mt-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                    {allTips.map(u => {
+                      const tip = u.tips?.find(t => t.matchId === m.id)
+                      if (!tip) return null
+                      const ptColor = tip.points === 5 ? 'text-emerald-400' :
+                                      tip.points >= 3 ? 'text-green-400' :
+                                      tip.points >= 1 ? 'text-yellow-400' : 'text-red-400'
+                      return (
+                        <div key={u.userId} className="flex items-center justify-between
+                          bg-pitch-800/60 rounded-lg px-2.5 py-1.5 text-xs">
+                          <span className="text-white/60">{u.username}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-white/50">{tip.homeGoals}–{tip.awayGoals}</span>
+                            <span className={`font-bold ${ptColor}`}>{tip.points}p</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
               </div>
             ))}
           </div>

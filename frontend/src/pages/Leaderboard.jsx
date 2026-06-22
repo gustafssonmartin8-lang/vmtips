@@ -10,33 +10,59 @@ const MEDAL_STYLES = [
   'bg-gradient-to-r from-orange-900/40 to-orange-800/20 border-orange-700/50',
 ]
 
+function CountUp({ target, duration = 1200 }) {
+  const [val, setVal] = useState(0)
+  useEffect(() => {
+    if (target === 0) return
+    const steps = 40
+    const inc = target / steps
+    let cur = 0
+    const iv = setInterval(() => {
+      cur = Math.min(cur + inc, target)
+      setVal(Math.round(cur))
+      if (cur >= target) clearInterval(iv)
+    }, duration / steps)
+    return () => clearInterval(iv)
+  }, [target])
+  return <>{val}</>
+}
+
+function RecentDots({ tips }) {
+  if (!tips?.length) return null
+  const last5 = tips.slice(-5)
+  const color = p => p === 5 ? 'bg-emerald-500' : p >= 3 ? 'bg-green-600' : p >= 1 ? 'bg-yellow-500' : 'bg-red-600'
+  return (
+    <div className="flex gap-1 items-center">
+      {last5.map((t, i) => (
+        <motion.div key={i}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: i * 0.08 }}
+          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${color(t.points)}`}
+          title={`Match ${t.matchId}: ${t.points}p`}>
+          {t.points}
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
 function getPeppLine(entry, allEntries, index) {
-  const lines = []
-  // Rank-based
-  if (index === 0) lines.push("🔥 Leder tävlingen!")
-  if (index === allEntries.length - 1) lines.push("💪 Kämpar på – det vänder!")
-  // Stats-based
-  if (entry.exactResults >= 3) lines.push(`🎯 ${entry.exactResults} exakta träffar!`)
-  if (entry.longestStreak >= 5) lines.push(`🔥 ${entry.longestStreak} matcher i rad med poäng!`)
-  if (entry.sidoPoints > 0) lines.push(`⭐ ${entry.sidoPoints}p på sido-tipps!`)
-  if (entry.correctWinner && entry.correctWinner > entry.tipsCount * 0.7)
-    lines.push("✅ Gissar rätt vinnare oftast!")
-  if (entry.avgPoints && parseFloat(entry.avgPoints) >= 2.5)
-    lines.push(`📈 Snitt ${entry.avgPoints}p/match – imponerande!`)
-  if (entry.matchPoints === 0 && entry.sidoPoints > 0)
-    lines.push("⭐ Satsar på sido-tipps!")
-  if (lines.length === 0) lines.push("⚽ Håller koll på varje match!")
-  return lines[0]
+  if (index === 0) return '🔥 Leder tävlingen!'
+  if (index === allEntries.length - 1) return '💪 Kämpar på – det vänder!'
+  if (entry.exactResults >= 3) return `🎯 ${entry.exactResults} exakta träffar!`
+  if (entry.longestStreak >= 5) return `🔥 ${entry.longestStreak} matcher i rad med poäng!`
+  if (entry.sidoPoints > 0) return `⭐ ${entry.sidoPoints}p på sido-tipps!`
+  if (entry.avgPoints && parseFloat(entry.avgPoints) >= 2.5) return `📈 Snitt ${entry.avgPoints}p/match!`
+  return '⚽ Håller koll på varje match!'
 }
 
 export default function Leaderboard() {
-  const [board, setBoard] = useState([])
-  const [prevBoard, setPrevBoard] = useState([])
   const [enriched, setEnriched] = useState([])
   const [loading, setLoading] = useState(true)
   const [showMovement, setShowMovement] = useState(false)
-  const { user, activeGroup } = useAuth()
   const prevRef = useRef([])
+  const { user, activeGroup } = useAuth()
 
   const fetchData = async () => {
     const [lb, tips, matches] = await Promise.all([
@@ -46,49 +72,38 @@ export default function Leaderboard() {
     ])
 
     const playedMatches = matches.data.filter(m => m.homeGoals !== null)
+      .sort((a, b) => a.id - b.id)
 
-    const enrichedBoard = lb.data.map(entry => {
+    const board = lb.data.map(entry => {
       const userData = tips.data.find(u => u.username === entry.username)
-      const userTips = userData?.tips || []
-      const scoredTips = userTips.filter(t => playedMatches.find(m => m.id === t.matchId))
-      const exactResults = scoredTips.filter(t => t.points === 5).length
-      const correctWinner = scoredTips.filter(t => {
-        const m = playedMatches.find(pm => pm.id === t.matchId)
-        if (!m || !userData) return false
-        return Math.sign(t.homeGoals - t.awayGoals) === Math.sign(m.homeGoals - m.awayGoals)
-      }).length
+      const userTips = (userData?.tips || [])
+        .filter(t => playedMatches.find(m => m.id === t.matchId))
+        .sort((a, b) => a.matchId - b.matchId)
 
-      // Streak
+      const exactResults = userTips.filter(t => t.points === 5).length
       let longestStreak = 0, tempStreak = 0
-      const sortedTips = scoredTips.sort((a,b) => a.matchId - b.matchId)
-      for (const t of sortedTips) {
+      for (const t of userTips) {
         if (t.points > 0) { tempStreak++; longestStreak = Math.max(longestStreak, tempStreak) }
         else tempStreak = 0
       }
-
-      const avgPoints = scoredTips.length > 0
-        ? (scoredTips.reduce((s,t) => s + t.points, 0) / scoredTips.length).toFixed(2)
+      const avgPoints = userTips.length > 0
+        ? (userTips.reduce((s, t) => s + t.points, 0) / userTips.length).toFixed(2)
         : '0.00'
 
-      return { ...entry, exactResults, correctWinner, longestStreak, avgPoints, tipsCount: scoredTips.length }
+      const prev = prevRef.current.find(p => p.username === entry.username)
+      const prevRank = prev?.rank ?? entry.rank
+      const moved = prevRank - entry.rank
+
+      return { ...entry, exactResults, longestStreak, avgPoints,
+               recentTips: userTips, tipsCount: userTips.length, prevRank, moved }
     })
 
-    // Detect rank changes
-    if (prevRef.current.length > 0) {
-      const withMovement = enrichedBoard.map(e => {
-        const prev = prevRef.current.find(p => p.username === e.username)
-        const prevRank = prev?.rank || e.rank
-        return { ...e, prevRank, moved: prevRank - e.rank } // positive = moved up
-      })
-      setEnriched(withMovement)
+    if (prevRef.current.length > 0 && board.some(e => e.moved !== 0)) {
       setShowMovement(true)
       setTimeout(() => setShowMovement(false), 3000)
-    } else {
-      setEnriched(enrichedBoard)
     }
-
-    prevRef.current = enrichedBoard
-    setBoard(lb.data)
+    prevRef.current = board
+    setEnriched(board)
     setLoading(false)
   }
 
@@ -107,29 +122,30 @@ export default function Leaderboard() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div className="text-center">
         <h1 className="font-display text-5xl text-gold-400 tracking-widest">TOPPLISTA</h1>
-        <p className="text-white/40 text-sm mt-1">Uppdateras automatiskt · {activeGroup?.name}</p>
+        <p className="text-white/40 text-sm mt-1">Uppdateras var 30:e sekund · {activeGroup?.name}</p>
       </div>
 
-      {/* Podium top 3 */}
+      {/* Podium */}
       {enriched.length >= 3 && (
         <div className="flex items-end justify-center gap-4 py-4">
           {[enriched[1], enriched[0], enriched[2]].map((entry, i) => {
             const isCenter = i === 1
-            const heights = ['h-24','h-32','h-20']
             const realRank = [1,0,2][i]
+            const heights = ['h-24','h-32','h-20']
             return (
               <motion.div key={entry.username}
-                initial={{ opacity:0, y:30 }}
-                animate={{ opacity:1, y:0 }}
+                initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }}
                 transition={{ delay: i * 0.1 }}
                 className="flex flex-col items-center gap-2">
                 <div className="text-2xl">{MEDALS[realRank]}</div>
                 <div className={`text-sm font-bold ${entry.username === user?.username ? 'text-gold-400' : 'text-white'}`}>
                   {entry.username}
                 </div>
-                <div className={`${heights[i]} w-20 rounded-t-xl flex items-end justify-center pb-2
+                <div className={`${heights[i]} w-20 rounded-t-xl flex flex-col items-center justify-end pb-2
                   ${isCenter ? 'bg-gold-500/30 border border-gold-500/50' : 'bg-pitch-700 border border-pitch-600'}`}>
-                  <span className="font-display text-2xl text-white">{entry.totalPoints}</span>
+                  <span className="font-display text-2xl text-white">
+                    <CountUp target={entry.totalPoints} duration={1000 + i*200} />
+                  </span>
                 </div>
               </motion.div>
             )
@@ -139,63 +155,78 @@ export default function Leaderboard() {
 
       {/* Full list */}
       <div className="space-y-2">
-        {enriched.map((entry, i) => {
-          const isMe = entry.username === user?.username
-          const barPct = Math.round((entry.totalPoints / max) * 100)
-          const moved = entry.moved || 0
+        <AnimatePresence mode="popLayout">
+          {enriched.map((entry, i) => {
+            const isMe = entry.username === user?.username
+            const barPct = Math.round((entry.totalPoints / max) * 100)
+            const moved = entry.moved || 0
 
-          return (
-            <motion.div key={entry.username}
-              initial={{ opacity:0, x:-20 }}
-              animate={{ opacity:1, x:0 }}
-              transition={{ delay: i * 0.04 }}
-              layout
-              className={`relative overflow-hidden rounded-xl border px-5 py-3
-                ${i < 3 ? MEDAL_STYLES[i] : 'bg-pitch-800 border-pitch-600'}
-                ${isMe ? 'ring-2 ring-gold-500/50' : ''}`}>
+            return (
+              <motion.div key={entry.username}
+                layout
+                initial={{ opacity:0, x:-30 }}
+                animate={{ opacity:1, x:0 }}
+                transition={{ layout: { type:'spring', stiffness:300, damping:30 }, delay: i * 0.05 }}
+                className={`relative overflow-hidden rounded-xl border px-4 py-3
+                  ${i < 3 ? MEDAL_STYLES[i] : 'bg-pitch-800 border-pitch-600'}
+                  ${isMe ? 'ring-2 ring-gold-500/50' : ''}`}>
 
-              {/* Progress bar */}
-              <div className="absolute inset-0 opacity-10"
-                style={{ width:`${barPct}%`, background:'linear-gradient(90deg,#22c55e,#15803d)' }} />
+                {/* Progress bar */}
+                <motion.div
+                  className="absolute inset-y-0 left-0 opacity-10"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${barPct}%` }}
+                  transition={{ duration: 1, delay: i * 0.05 }}
+                  style={{ background: 'linear-gradient(90deg,#22c55e,#15803d)' }} />
 
-              <div className="relative flex items-center gap-4">
-                <span className="font-display text-3xl text-white/40 w-8 text-center">
-                  {i < 3 ? MEDALS[i] : `${i+1}`}
-                </span>
+                <div className="relative flex items-center gap-3">
+                  {/* Rank */}
+                  <span className="font-display text-2xl text-white/40 w-7 text-center shrink-0">
+                    {i < 3 ? MEDALS[i] : `${i+1}`}
+                  </span>
 
-                {/* Movement indicator */}
-                {showMovement && moved !== 0 && (
-                  <motion.div
-                    initial={{ opacity:0, scale:0.5 }}
-                    animate={{ opacity:1, scale:1 }}
-                    exit={{ opacity:0 }}
-                    className={`text-xs font-bold ${moved > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {moved > 0 ? `▲${moved}` : `▼${Math.abs(moved)}`}
-                  </motion.div>
-                )}
+                  {/* Movement */}
+                  <AnimatePresence>
+                    {showMovement && moved !== 0 && (
+                      <motion.span
+                        initial={{ opacity:0, scale:0.5 }} animate={{ opacity:1, scale:1 }}
+                        exit={{ opacity:0 }}
+                        className={`text-xs font-bold shrink-0 ${moved > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {moved > 0 ? `▲${moved}` : `▼${Math.abs(moved)}`}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-lg ${isMe ? 'text-gold-400' : 'text-white'}`}>
-                      {entry.username}
-                    </span>
-                    {isMe && <span className="badge bg-gold-500/20 text-gold-400 text-xs">Du</span>}
+                  {/* Name + pepp + recent dots */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`font-bold ${isMe ? 'text-gold-400' : 'text-white'}`}>
+                        {entry.username}
+                      </span>
+                      {isMe && <span className="text-xs px-1.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400">Du</span>}
+                    </div>
+                    <div className="text-xs text-white/30 mt-0.5">{getPeppLine(entry, enriched, i)}</div>
+                    {entry.recentTips?.length > 0 && (
+                      <div className="mt-1.5">
+                        <RecentDots tips={entry.recentTips} />
+                      </div>
+                    )}
                   </div>
-                  <div className="text-xs text-white/35 mt-0.5">
-                    {getPeppLine(entry, enriched, i)}
+
+                  {/* Points */}
+                  <div className="text-right shrink-0">
+                    <div className="font-display text-3xl text-white">
+                      <CountUp target={entry.totalPoints} duration={800 + i*100} />
+                    </div>
+                    <div className="text-xs text-white/30">
+                      {entry.matchPoints}m · {entry.sidoPoints}s
+                    </div>
                   </div>
                 </div>
-
-                <div className="text-right shrink-0">
-                  <div className="font-display text-3xl text-white">{entry.totalPoints}</div>
-                  <div className="text-xs text-white/30">
-                    {entry.matchPoints}p match · {entry.sidoPoints}p sido
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )
-        })}
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
       </div>
     </div>
   )
