@@ -16,49 +16,26 @@ const FLAG = t => ({
 }[t] || '🏳️')
 
 const GROUPS = {
-  A: ['Mexiko','Sydafrika','Sydkorea','Tjeckien'],
-  B: ['Kanada','Bosnien-Hercegovina','Qatar','Schweiz'],
-  C: ['Brasilien','Marocko','Haiti','Skottland'],
-  D: ['USA','Paraguay','Australien','Turkiet'],
-  E: ['Tyskland','Curacao','Elfenbenskusten','Ecuador'],
-  F: ['Nederländerna','Japan','Sverige','Tunisien'],
-  G: ['Belgien','Egypten','Iran','Nya Zeeland'],
-  H: ['Spanien','Kap Verde','Saudiarabien','Uruguay'],
-  I: ['Frankrike','Senegal','Irak','Norge'],
-  J: ['Argentina','Algeriet','Österrike','Jordanien'],
-  K: ['Portugal','Kongo-Kinshasa','Uzbekistan','Colombia'],
-  L: ['England','Kroatien','Ghana','Panama'],
+  A:['Mexiko','Sydafrika','Sydkorea','Tjeckien'],
+  B:['Kanada','Bosnien-Hercegovina','Qatar','Schweiz'],
+  C:['Brasilien','Marocko','Haiti','Skottland'],
+  D:['USA','Paraguay','Australien','Turkiet'],
+  E:['Tyskland','Curacao','Elfenbenskusten','Ecuador'],
+  F:['Nederländerna','Japan','Sverige','Tunisien'],
+  G:['Belgien','Egypten','Iran','Nya Zeeland'],
+  H:['Spanien','Kap Verde','Saudiarabien','Uruguay'],
+  I:['Frankrike','Senegal','Irak','Norge'],
+  J:['Argentina','Algeriet','Österrike','Jordanien'],
+  K:['Portugal','Kongo-Kinshasa','Uzbekistan','Colombia'],
+  L:['England','Kroatien','Ghana','Panama'],
 }
 
-// Fixed R32 matchups (group winners vs runners-up or thirds)
-// Based on FIFA 2026 bracket structure:
-// Match 65: 1A vs 2B | Match 66: 1C vs 3(ABCDFGHI) | Match 67: 1E vs 3(ABCDHIJ)
-// Match 68: 1F vs 2C | Match 69: 1E vs 2I? ... simplified fixed pairings:
-const R32_FIXED = [
-  { home: '1A', away: '2B', label: '1A vs 2B' },
-  { home: '1C', away: '3X', label: '1C vs 3a' },
-  { home: '1E', away: '3X', label: '1E vs 3b' },
-  { home: '1F', away: '2C', label: '1F vs 2C' },
-  { home: '1I', away: '3X', label: '1I vs 3c' },
-  { home: '1A', away: '3X', label: '1A vs 3d' }, // simplified
-  { home: '1L', away: '3X', label: '1L vs 3e' },
-  { home: '1G', away: '3X', label: '1G vs 3f' },
-  { home: '1D', away: '3X', label: '1D vs 3g' },
-  { home: '1H', away: '2J', label: '1H vs 2J' },
-  { home: '2K', away: '2L', label: '2K vs 2L' },
-  { home: '1B', away: '3X', label: '1B vs 3h' },
-  { home: '2D', away: '2G', label: '2D vs 2G' },
-  { home: '1J', away: '2H', label: '1J vs 2H' },
-  { home: '2E', away: '2I', label: '2E vs 2I' },
-  { home: '1K', away: '3X', label: '1K vs 3i' },
-]
-
-function calcStandings(matches, teams) {
-  const table = {}
-  teams.forEach(t => { table[t] = { team: t, played:0, won:0, drawn:0, lost:0, gf:0, ga:0, pts:0 } })
-  matches.forEach(m => {
+function calcStandings(groupMatches, teams) {
+  const t = {}
+  teams.forEach(n => { t[n] = {team:n,played:0,won:0,drawn:0,lost:0,gf:0,ga:0,pts:0} })
+  groupMatches.forEach(m => {
     if (m.homeGoals === null || m.homeGoals === undefined) return
-    const h = table[m.homeTeam], a = table[m.awayTeam]
+    const h = t[m.homeTeam], a = t[m.awayTeam]
     if (!h || !a) return
     h.played++; a.played++
     h.gf += m.homeGoals; h.ga += m.awayGoals
@@ -67,44 +44,51 @@ function calcStandings(matches, teams) {
     else if (m.homeGoals < m.awayGoals) { a.won++; a.pts+=3; h.lost++ }
     else { h.drawn++; h.pts++; a.drawn++; a.pts++ }
   })
-  return Object.values(table).sort((a,b) => {
+  return Object.values(t).sort((a,b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
-    const gdB = b.gf-b.ga, gdA = a.gf-a.ga
-    if (gdB !== gdA) return gdB - gdA
+    const gd = (b.gf-b.ga) - (a.gf-a.ga)
+    if (gd !== 0) return gd
     return b.gf - a.gf
   })
 }
 
-function calcBestThirds(allStandings) {
-  return Object.entries(allStandings)
-    .map(([g, s]) => s[2] ? { ...s[2], group: g } : null)
-    .filter(x => x && x.played > 0)
-    .sort((a,b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts
-      if ((b.gf-b.ga) !== (a.gf-a.ga)) return (b.gf-b.ga)-(a.gf-a.ga)
-      return b.gf - a.gf
-    })
-    .slice(0, 8)
-}
+// Official FIFA 2026 R32 bracket (simplified fixed structure)
+// Each entry: [home_group_pos, away_group_pos]
+// pos: '1X' = winner of group X, '2X' = runner-up, '3' = best third (indexed)
+const R32 = [
+  ['1A','3cefhi'],  // 1A vs best third from C/E/F/H/I
+  ['2A','2B'],      // 2A vs 2B
+  ['1C','2F'],      // 1C vs 2F
+  ['1F','2C'],      // 1F vs 2C (Sverige kan vara här som 1F)
+  ['2E','2I'],      // 2E vs 2I
+  ['1I','3cdfgh'],  // 1I vs best third from C/D/F/G/H
+  ['1L','3ehijk'],  // 1L vs best third from E/H/I/J/K
+  ['1G','3aeij'],   // 1G vs best third from A/E/I/J
+  ['1D','3befij'],  // 1D vs best third from B/E/F/I/J
+  ['2D','2G'],      // 2D vs 2G
+  ['2K','2L'],      // 2K vs 2L
+  ['1B','3efgij'],  // 1B vs best third from E/F/G/I/J
+  ['1E','3abcdf'],  // 1E vs best third from A/B/C/D/F
+  ['1J','2H'],      // 1J vs 2H
+  ['1H','2J'],      // 1H vs 2J (note: differs from 1J vs 2H)
+  ['1K','3dijl'],   // 1K vs best third from D/I/J/L
+]
 
-function MatchCard({ home, away, label, preliminary }) {
-  const hasResult = home && away && home.goals !== null && home.goals !== undefined
+function MatchCard({ home, away, prelim }) {
+  const hasResult = home?.goals !== null && home?.goals !== undefined && away
 
   const TeamRow = ({ t, won }) => (
-    <div className={`flex items-center gap-2 px-3 py-1.5 ${won ? 'bg-pitch-600/50' : ''}`}>
+    <div className={`flex items-center gap-2 px-3 py-1.5 ${won ? 'bg-pitch-600/40' : ''}`}>
       {t?.name ? (
         <>
-          <span className="text-base shrink-0">{FLAG(t.name)}</span>
+          <span className="text-sm shrink-0">{FLAG(t.name)}</span>
           <span className={`text-xs truncate flex-1 ${won ? 'font-bold text-white' : 'text-white/70'}`}>
             {t.name}
           </span>
-          {t.goals !== undefined && t.goals !== null &&
-            <span className={`text-xs font-bold shrink-0 ${won ? 'text-gold-400' : 'text-white/40'}`}>
-              {t.goals}
-            </span>}
+          {hasResult && <span className={`text-xs font-bold shrink-0 ${won ? 'text-gold-400' : 'text-white/40'}`}>{t.goals}</span>}
         </>
       ) : (
-        <span className="text-xs text-white/25 italic flex-1">{label || 'TBD'}</span>
+        <span className="text-xs text-white/20 italic flex-1">TBD</span>
       )}
     </div>
   )
@@ -113,14 +97,13 @@ function MatchCard({ home, away, label, preliminary }) {
   const awayWon = hasResult && away.goals > home.goals
 
   return (
-    <div className={`rounded-lg overflow-hidden border min-w-0
-      ${preliminary ? 'border-white/10 opacity-70' : hasResult ? 'border-pitch-500' : 'border-pitch-700'}
-      bg-pitch-800`}>
+    <div className={`rounded-lg overflow-hidden border min-w-0 bg-pitch-800
+      ${prelim ? 'border-white/10' : hasResult ? 'border-pitch-500' : 'border-pitch-700'}`}>
       <TeamRow t={home} won={homeWon} />
       <div className="h-px bg-pitch-700" />
       <TeamRow t={away} won={awayWon} />
-      {preliminary && (
-        <div className="text-center text-white/20 text-xs py-0.5 bg-pitch-900/40">prelim.</div>
+      {prelim && home?.name && (
+        <div className="text-center text-white/20 text-xs py-0.5 bg-pitch-900/30">prelim.</div>
       )}
     </div>
   )
@@ -136,170 +119,154 @@ export default function Bracket() {
 
   if (loading) return <div className="flex items-center justify-center h-64 text-white/40">Laddar...</div>
 
-  // Build standings from group matches
-  const allStandings = {}
+  // Build standings per group
+  const standings = {}
   Object.entries(GROUPS).forEach(([g, teams]) => {
-    allStandings[g] = calcStandings(matches.filter(m => m.round === `Grupp ${g}`), teams)
+    standings[g] = calcStandings(matches.filter(m => m.round === `Grupp ${g}`), teams)
   })
-  const bestThirds = calcBestThirds(allStandings)
 
-  // Helper to get team by position
-  const getTeam = (pos) => {
+  // Best thirds ranked
+  const thirds = Object.entries(standings)
+    .map(([g, s]) => s[2] ? { ...s[2], group: g } : null)
+    .filter(x => x && x.played > 0)
+    .sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts
+      if ((b.gf-b.ga) !== (a.gf-a.ga)) return (b.gf-b.ga)-(a.gf-a.ga)
+      return b.gf - a.gf
+    })
+
+  // Helper: get team from position string
+  const getPos = (pos) => {
     const rank = parseInt(pos[0]) - 1
-    const group = pos[1]
-    if (group === 'X') {
-      // best third
-      const idx = parseInt(pos[2] || 0)
-      const t = bestThirds[idx]
-      return t ? { name: t.team } : null
-    }
-    const s = allStandings[group]
-    return s?.[rank] ? { name: s[rank].team } : null
+    const group = pos[1].toUpperCase()
+    const s = standings[group]
+    if (!s) return null
+    return s[rank] ? { name: s[rank].team } : null
   }
 
-  // Get confirmed knockout matches from DB
-  const knockoutMatches = matches.filter(m =>
+  // Get nth best third (fresh each render)
+  const getThird = (n) => thirds[n] ? { name: thirds[n].team } : null
+
+  // Build confirmed knockout matches
+  const kMatches = matches.filter(m =>
     ['Sextondelsfinal','Åttondelsfinal','Kvartsfinal','Semifinal','Final','Match om 3:e plats'].includes(m.round)
   )
-
-  const getKnockout = (round, idx) => {
-    const rm = knockoutMatches.filter(m => m.round === round)
-    return rm[idx] || null
+  const getKO = (round, i) => {
+    const rm = kMatches.filter(m => m.round === round)
+    return rm[i] || null
   }
 
-  // Build R32 – use DB data if available, otherwise preliminary
-  const buildR32 = () => {
-    return R32_FIXED.map((fixture, i) => {
-      const dbMatch = getKnockout('Sextondelsfinal', i)
-      if (dbMatch?.homeTeam) {
-        return {
-          home: { name: dbMatch.homeTeam, goals: dbMatch.homeGoals },
-          away: { name: dbMatch.awayTeam, goals: dbMatch.awayGoals },
-          preliminary: false
-        }
-      }
+  // Build R32 cards - track third index separately
+  let thirdCount = 0
+  const r32Cards = R32.map((pair, i) => {
+    const db = getKO('Sextondelsfinal', i)
+    if (db?.homeTeam) {
       return {
-        home: getTeam(fixture.home),
-        away: getTeam(fixture.away),
-        preliminary: true,
-        label: fixture.label
+        home: { name: db.homeTeam, goals: db.homeGoals },
+        away: { name: db.awayTeam, goals: db.awayGoals },
+        prelim: false
       }
-    })
-  }
+    }
+    const homePos = pair[0]
+    const awayPos = pair[1]
+    const isThird = !awayPos.startsWith('1') && !awayPos.startsWith('2')
+    const home = getPos(homePos)
+    const away = isThird ? getThird(thirdCount++) : getPos(awayPos)
+    return { home, away, prelim: true }
+  })
 
-  const buildRound = (round, count) => {
-    return Array.from({ length: count }, (_, i) => {
-      const m = getKnockout(round, i)
+  const buildRound = (round, count) =>
+    Array.from({ length: count }, (_, i) => {
+      const m = getKO(round, i)
       return {
         home: m?.homeTeam ? { name: m.homeTeam, goals: m.homeGoals } : null,
         away: m?.awayTeam ? { name: m.awayTeam, goals: m.awayGoals } : null,
-        preliminary: false
+        prelim: false
       }
     })
-  }
 
-  const r32 = buildR32()
   const r16 = buildRound('Åttondelsfinal', 8)
   const qf  = buildRound('Kvartsfinal', 4)
   const sf  = buildRound('Semifinal', 2)
   const fin = buildRound('Final', 1)
   const third = buildRound('Match om 3:e plats', 1)
 
-  const groupStageComplete = matches.filter(m =>
-    ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
-     'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L'].includes(m.round)
-    && m.homeGoals !== null
-  ).length === 72
+  const hasPrelim = r32Cards.some(m => m.prelim && m.home)
 
-  const prelimCount = r32.filter(m => m.preliminary && (m.home || m.away)).length
-
-  const RoundCol = ({ title, items, width = 'w-36' }) => (
-    <div className={`flex flex-col shrink-0 ${width}`}>
-      <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2">
-        {title}
-      </div>
+  const RoundCol = ({ title, items, w = 'w-36' }) => (
+    <div className={`flex flex-col shrink-0 ${w}`}>
+      <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2 px-1">{title}</div>
       <div className="flex flex-col justify-around flex-1 gap-2">
-        {items.map((m, i) => (
-          <motion.div key={i}
-            initial={{ opacity:0, scale:0.95 }}
-            animate={{ opacity:1, scale:1 }}
-            transition={{ delay: i * 0.04 }}>
-            <MatchCard {...m} />
-          </motion.div>
-        ))}
+        {items.map((m, i) => <motion.div key={i} initial={{opacity:0,scale:0.95}} animate={{opacity:1,scale:1}} transition={{delay:i*0.03}}><MatchCard {...m} /></motion.div>)}
       </div>
     </div>
   )
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto">
+    <div className="space-y-5 max-w-6xl mx-auto">
       <div>
         <h1 className="font-display text-4xl text-gold-400 tracking-wide">Slutspel</h1>
         <p className="text-white/40 text-sm mt-0.5">VM 2026 · Knockout-bracket</p>
       </div>
 
-      {/* Status banner */}
-      {!groupStageComplete && prelimCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-yellow-900/20 border border-yellow-700/40 text-sm">
-          <span className="text-yellow-400">⚠️</span>
-          <span className="text-yellow-300/80">
-            Preliminärt bracket baserat på nuvarande grupptabeller · Uppdateras när fler matcher spelas
-          </span>
+      {hasPrelim && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-yellow-900/20 border border-yellow-700/40 text-sm">
+          <span className="text-yellow-400 shrink-0">⚠️</span>
+          <span className="text-yellow-300/80">Preliminärt bracket baserat på nuvarande grupptabeller · Uppdateras när fler matcher spelas</span>
         </div>
       )}
 
-      {/* Desktop horizontal bracket */}
-      <div className="hidden sm:block overflow-x-auto pb-6">
-        <div className="flex gap-3 items-stretch" style={{ minHeight: '700px', minWidth: '900px' }}>
-          <RoundCol title="Sextondelsfinal" items={r32.slice(0,8)} />
-          <RoundCol title="Åttondelsfinal" items={r16.slice(0,4)} />
-          <RoundCol title="Kvartsfinal" items={qf.slice(0,2)} />
-          <div className="flex flex-col gap-4 shrink-0 w-36">
-            <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2">Semifinal</div>
-            <div className="flex flex-col gap-2">
+      {/* Desktop */}
+      <div className="hidden sm:block overflow-x-auto pb-4">
+        <div className="flex gap-3 items-stretch" style={{minHeight:'680px', minWidth:'950px'}}>
+          <RoundCol title="16-delsfinal" items={r32Cards.slice(0,8)} />
+          <RoundCol title="8-delsfinal" items={r16.slice(0,4)} />
+          <RoundCol title="Kvartsf." items={qf.slice(0,2)} />
+          <div className="flex flex-col justify-around shrink-0 w-36 gap-2">
+            <div>
+              <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2">Semifinal</div>
               <MatchCard {...sf[0]} />
             </div>
-            <div className="flex-1 flex flex-col justify-center gap-4">
+            <div className="space-y-3">
               <div>
                 <div className="text-xs font-bold text-gold-400 uppercase tracking-wider text-center mb-2">🏆 Final</div>
-                <MatchCard {...fin[0]} />
+                <MatchCard {...(fin[0] || {})} />
               </div>
               <div>
                 <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2">🥉 Brons</div>
-                <MatchCard {...third[0]} />
+                <MatchCard {...(third[0] || {})} />
               </div>
             </div>
-            <div className="flex flex-col gap-2">
+            <div>
+              <div className="text-xs font-bold text-white/30 uppercase tracking-wider text-center mb-2">Semifinal</div>
               <MatchCard {...(sf[1] || {})} />
             </div>
           </div>
-          <RoundCol title="Kvartsfinal" items={qf.slice(2,4)} />
-          <RoundCol title="Åttondelsfinal" items={r16.slice(4,8)} />
-          <RoundCol title="Sextondelsfinal" items={r32.slice(8,16)} />
+          <RoundCol title="Kvartsf." items={qf.slice(2,4)} />
+          <RoundCol title="8-delsfinal" items={r16.slice(4,8)} />
+          <RoundCol title="16-delsfinal" items={r32Cards.slice(8,16)} />
         </div>
       </div>
 
-      {/* Mobile vertical list */}
-      <div className="sm:hidden space-y-6">
+      {/* Mobile */}
+      <div className="sm:hidden space-y-5">
         {[
-          { title: 'Sextondelsfinal', items: r32 },
-          { title: 'Åttondelsfinal', items: r16 },
-          { title: 'Kvartsfinal', items: qf },
-          { title: 'Semifinal', items: sf },
-          { title: '🥉 Bronsmatch', items: third },
-          { title: '🏆 Final', items: fin },
-        ].map(({ title, items }) => (
+          {title:'16-delsfinal', items:r32Cards},
+          {title:'8-delsfinal', items:r16},
+          {title:'Kvartsfinal', items:qf},
+          {title:'Semifinal', items:sf},
+          {title:'🥉 Bronsmatch', items:third},
+          {title:'🏆 Final', items:fin},
+        ].map(({title, items}) => (
           <div key={title}>
-            <h2 className="font-display text-xl text-gold-400 mb-3">{title}</h2>
-            <div className="space-y-2">
-              {items.map((m, i) => <MatchCard key={i} {...m} />)}
-            </div>
+            <h2 className="font-display text-xl text-gold-400 mb-2">{title}</h2>
+            <div className="space-y-2">{items.map((m,i) => <MatchCard key={i} {...m} />)}</div>
           </div>
         ))}
       </div>
 
       <p className="text-white/20 text-xs text-center">
-        "prelim." = preliminärt baserat på nuvarande ställning · Uppdateras automatiskt
+        "prelim." = baserat på nuvarande ställning · Uppdateras automatiskt
       </p>
     </div>
   )
