@@ -55,23 +55,24 @@ function calcStandings(groupMatches, teams) {
 // Official FIFA 2026 R32 bracket (simplified fixed structure)
 // Each entry: [home_group_pos, away_group_pos]
 // pos: '1X' = winner of group X, '2X' = runner-up, '3' = best third (indexed)
+// Official FIFA 2026 R32 pairings (source: FIFA/FIFAwatch)
 const R32 = [
-  ['1A','3cefhi'],  // 1A vs best third from C/E/F/H/I
-  ['2A','2B'],      // 2A vs 2B
-  ['1C','2F'],      // 1C vs 2F
-  ['1F','2C'],      // 1F vs 2C (Sverige kan vara här som 1F)
-  ['2E','2I'],      // 2E vs 2I
-  ['1I','3cdfgh'],  // 1I vs best third from C/D/F/G/H
-  ['1L','3ehijk'],  // 1L vs best third from E/H/I/J/K
-  ['1G','3aeij'],   // 1G vs best third from A/E/I/J
-  ['1D','3befij'],  // 1D vs best third from B/E/F/I/J
-  ['2D','2G'],      // 2D vs 2G
-  ['2K','2L'],      // 2K vs 2L
-  ['1B','3efgij'],  // 1B vs best third from E/F/G/I/J
-  ['1E','3abcdf'],  // 1E vs best third from A/B/C/D/F
-  ['1J','2H'],      // 1J vs 2H
-  ['1H','2J'],      // 1H vs 2J (note: differs from 1J vs 2H)
-  ['1K','3dijl'],   // 1K vs best third from D/I/J/L
+  ['2A','2B'],      // Match 65: 2A vs 2B
+  ['1C','2F'],      // Match 66: 1C vs 2F
+  ['1E','3third'],  // Match 67: 1E vs 3(A/B/C/D/F)
+  ['1F','2C'],      // Match 68: 1F vs 2C
+  ['2E','2I'],      // Match 69: 2E vs 2I
+  ['1I','3third'],  // Match 70: 1I vs 3(C/D/F/G/H)
+  ['1A','3third'],  // Match 71: 1A vs 3(C/E/F/H/I)
+  ['1L','3third'],  // Match 72: 1L vs 3(E/H/I/J/K)
+  ['1G','3third'],  // Match 73: 1G vs 3(A/E/H/I/J)
+  ['1D','3third'],  // Match 74: 1D vs 3(B/E/F/I/J)
+  ['1H','2J'],      // Match 75: 1H vs 2J
+  ['2K','2L'],      // Match 76: 2K vs 2L
+  ['1B','3third'],  // Match 77: 1B vs 3(E/F/G/I/J)
+  ['2D','2G'],      // Match 78: 2D vs 2G
+  ['1J','2H'],      // Match 79: 1J vs 2H
+  ['1K','3third'],  // Match 80: 1K vs 3(D/I/J/L)
 ]
 
 function MatchCard({ home, away, prelim }) {
@@ -169,7 +170,7 @@ export default function Bracket() {
     }
     const homePos = pair[0]
     const awayPos = pair[1]
-    const isThird = !awayPos.startsWith('1') && !awayPos.startsWith('2')
+    const isThird = awayPos === '3third'
     const home = getPos(homePos)
     const away = isThird ? getThird(thirdCount++) : getPos(awayPos)
     return { home, away, prelim: true }
