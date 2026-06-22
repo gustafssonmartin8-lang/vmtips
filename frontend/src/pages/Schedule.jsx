@@ -171,11 +171,16 @@ export default function Schedule() {
     }
   })
 
-  const filtered = enriched.filter(m => {
-    if (filter === 'all') return true
-    if (filter === 'played') return m.homeGoals !== null
-    return m.homeGoals === null
-  })
+  const filtered = (() => {
+    const f = enriched.filter(m => {
+      if (filter === 'all') return true
+      if (filter === 'played') return m.homeGoals !== null
+      return m.homeGoals === null
+    })
+    // Spelade matcher: senaste först
+    if (filter === 'played') return [...f].reverse()
+    return f
+  })()
 
   const byDate = {}
   filtered.forEach(m => {

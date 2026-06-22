@@ -13,7 +13,15 @@ const ROUNDS = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
   'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L',
   'Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
 
-const sortBySchedule = (matches) => [...matches].sort((a, b) => a.id - b.id)
+const SCHEDULE_ORDER = [
+  1,2,7,8,19,13,14,20,25,31,26,32,43,37,44,38,49,50,55,56,61,67,
+  68,62,3,9,10,4,21,15,16,22,33,27,28,34,45,39,46,40,57,51,52,58,
+  63,69,70,64,11,12,17,18,5,6,29,30,35,36,23,24,53,54,47,48,41,42,
+  71,72,65,66,59,60,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88
+]
+const sortBySchedule = (matches) => [...matches].sort((a, b) =>
+  (SCHEDULE_ORDER.indexOf(a.id) ?? 999) - (SCHEDULE_ORDER.indexOf(b.id) ?? 999)
+)
 
 export default function AllTips() {
   const [allData, setAllData] = useState([])
