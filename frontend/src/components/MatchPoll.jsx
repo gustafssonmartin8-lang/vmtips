@@ -22,7 +22,9 @@ export default function MatchPoll({ match }) {
     setVoting(false)
   }
 
-  if (!poll || match.homeGoals !== null) return null
+  if (!poll) return null
+  // Don't show after match is fully done
+  if (match.homeGoals !== null) return null
 
   const { myVote, total, votes } = poll
   const pct = (n) => total > 0 ? Math.round((n / total) * 100) : 0
@@ -41,7 +43,7 @@ export default function MatchPoll({ match }) {
         {myVote ? `Röstning · ${total} röst${total !== 1 ? 'er' : ''}` : 'Vad tror du? Rösta!'}
       </div>
 
-      {!myVote ? (
+      {!myVote && !match.isLocked ? (
         // Voting buttons
         <div className="flex gap-2">
           {options.map(opt => (
