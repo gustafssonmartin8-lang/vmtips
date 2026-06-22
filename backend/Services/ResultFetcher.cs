@@ -113,8 +113,29 @@ public class ResultFetcherService(
         if (changed) await db.SaveChangesAsync(ct);
     }
 
+    // ── Daily request counter ───────────────────────────────────
+    public static int RequestsToday => _requestsToday;
+    private static int _requestsToday = 0;
+    private static DateOnly _counterDate = DateOnly.MinValue;
+    private const int MAX_REQUESTS_PER_DAY = 80; // Safety margin under 100
+
+    private bool TryConsumeRequest()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (today != _counterDate) { _counterDate = today; _requestsToday = 0; }
+        if (_requestsToday >= MAX_REQUESTS_PER_DAY)
+        {
+            logger.LogWarning("⛔ Daglig API-kvot nådd ({Max} requests). Väntar till imorgon.", MAX_REQUESTS_PER_DAY);
+            return false;
+        }
+        _requestsToday++;
+        logger.LogInformation("📡 API-request {Current}/{Max} idag", _requestsToday, MAX_REQUESTS_PER_DAY);
+        return true;
+    }
+
     private async Task<List<FixtureResponse>?> FetchFixtures(string date, string apiKey, CancellationToken ct)
     {
+        if (!TryConsumeRequest()) return null;
         try
         {
             _http.DefaultRequestHeaders.Clear();

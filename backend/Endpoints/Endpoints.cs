@@ -16,6 +16,7 @@ public static class Endpoints
         MapTips(app);
         MapLeaderboard(app);
         MapLiveScores(app);
+        MapApiStatus(app);
         MapAdmin(app);
     }
 
@@ -306,6 +307,21 @@ public static class Endpoints
         }).RequireAuthorization();
     }
 
-    static bool IsAdmin(ClaimsPrincipal user) =>
+
+    static void MapApiStatus(WebApplication app)
+    {
+        app.MapGet("/api/admin/apistatus", (ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            return Results.Ok(new {
+                requestsToday = ResultFetcherService.RequestsToday,
+                maxPerDay = 80,
+                remaining = 80 - ResultFetcherService.RequestsToday,
+                date = DateOnly.FromDateTime(DateTime.UtcNow).ToString()
+            });
+        }).RequireAuthorization();
+    }
+
+        static bool IsAdmin(ClaimsPrincipal user) =>
         bool.TryParse(user.FindFirstValue("isAdmin"), out var v) && v;
 }

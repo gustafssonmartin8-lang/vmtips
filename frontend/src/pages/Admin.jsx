@@ -9,6 +9,11 @@ const ROUNDS = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
 
 export default function Admin() {
   const [tab, setTab] = useState('results')
+  const [apiStatus, setApiStatus] = useState(null)
+
+  useEffect(() => {
+    api.get('/admin/apistatus').then(r => setApiStatus(r.data)).catch(() => {})
+  }, [])
   const [matches, setMatches]   = useState([])
   const [users,   setUsers]     = useState([])
   const [sido,    setSido]      = useState({ skyttekung:'', assistkung:'', gultKort:'' })
@@ -94,6 +99,23 @@ export default function Admin() {
           className="bg-grass-500/20 border border-grass-500/50 rounded-xl px-4 py-3 text-grass-400 font-medium">
           {msg}
         </motion.div>
+      )}
+
+      {/* API Status */}
+      {apiStatus && (
+        <div className={`flex items-center gap-4 px-4 py-3 rounded-xl border text-sm
+          ${apiStatus.remaining < 10
+            ? 'bg-red-900/20 border-red-700/50 text-red-400'
+            : apiStatus.remaining < 30
+            ? 'bg-yellow-900/20 border-yellow-700/50 text-yellow-400'
+            : 'bg-pitch-800 border-pitch-600 text-white/60'}`}>
+          <span className="text-lg">📡</span>
+          <span>API-Football idag: <strong>{apiStatus.requestsToday}/{apiStatus.maxPerDay}</strong> requests</span>
+          <span className="ml-auto">
+            {apiStatus.remaining} kvar
+            {apiStatus.remaining < 10 && ' ⚠️ Snart slut!'}
+          </span>
+        </div>
       )}
 
       {/* Tabs */}
