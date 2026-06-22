@@ -46,13 +46,12 @@ public static class MatchTimeService
     public static DateTime? GetKickoff(int matchId) =>
         _kickoffs.TryGetValue(matchId, out var dt) ? dt : null;
 
+    // Active window: from kickoff until 3h after (covers live + FT confirmation)
     public static bool IsInFetchWindow(int matchId, DateTime nowUtc)
     {
         var kickoff = GetKickoff(matchId);
         if (kickoff == null) return false;
-        var windowStart = kickoff.Value.AddHours(2);
-        var windowEnd   = kickoff.Value.AddHours(3);
-        return nowUtc >= windowStart && nowUtc <= windowEnd;
+        return nowUtc >= kickoff.Value && nowUtc <= kickoff.Value.AddHours(3);
     }
 
     public static bool IsLiveNow(int matchId, DateTime nowUtc)

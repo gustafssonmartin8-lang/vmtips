@@ -41,7 +41,7 @@ public class ResultFetcherService(
 
         // Filtrera på matchfönster: avspark+2h till avspark+3h
         var pending = candidates
-            .Where(m => MatchTimeService.IsInFetchWindow(m.Id, now))
+            .Where(m => MatchTimeService.IsInFetchWindow(m.Id, now) || MatchTimeService.IsLiveNow(m.Id, now))
             .ToList();
 
         if (pending.Count == 0) return;
@@ -74,38 +74,30 @@ public class ResultFetcherService(
             }
 
             var status = fixture.fixture.status.@short;
+            var elapsed = fixture.fixture.status.elapsed;
+            var homeGoals = fixture.goals.home ?? 0;
+            var awayGoals = fixture.goals.away ?? 0;
 
-            // Uppdatera live-score även under pågående match
-            if (IsLiveStatus(status) || IsFinishedStatus(status))
+            if (IsLiveStatus(status))
             {
-                if (fixture.goals.home != null && fixture.goals.away != null)
-                {
-                    bool wasNull = match.HomeGoals == null;
-                    match.HomeGoals = fixture.goals.home;
-                    match.AwayGoals = fixture.goals.away;
-
-                    if (IsFinishedStatus(status))
-                    {
-                        logger.LogInformation("✅ FT: {Home} {H}-{A} {Away}",
-                            match.HomeTeam, fixture.goals.home, fixture.goals.away, match.AwayTeam);
-                    }
-                    else
-                    {
-                        logger.LogInformation("⚽ LIVE {Min}': {Home} {H}-{A} {Away}",
-                            fixture.fixture.status.elapsed,
-                            match.HomeTeam, fixture.goals.home, fixture.goals.away, match.AwayTeam);
-                        // Håll ej låst under live (så vi fortsätter polla)
-                        match.HomeGoals = null; // Återställ – sparas via LiveScore-tabell istället
-                        // Spara live-score i matchens kommentar (tillfällig lösning)
-                        match.HomeGoals = fixture.goals.home;
-                        match.AwayGoals = fixture.goals.away;
-                    }
-                    changed = true;
-                }
+                // Uppdatera live-cache (visas i frontend, sparas INTE i DB)
+                LiveScoreCache.Update(match.Id, homeGoals, awayGoals, status, elapsed);
+                logger.LogInformation("⚽ LIVE {Min}': {Home} {H}-{A} {Away} (status={Status})",
+                    elapsed, match.HomeTeam, homeGoals, awayGoals, match.AwayTeam, status);
+            }
+            else if (IsFinishedStatus(status))
+            {
+                // Matchen klar – spara i DB och rensa live-cache
+                match.HomeGoals = homeGoals;
+                match.AwayGoals = awayGoals;
+                LiveScoreCache.Update(match.Id, homeGoals, awayGoals, status, elapsed);
+                changed = true;
+                logger.LogInformation("✅ FT: {Home} {H}-{A} {Away}",
+                    match.HomeTeam, homeGoals, awayGoals, match.AwayTeam);
             }
             else
             {
-                logger.LogInformation("{Home} vs {Away}: {Status} – inte klar",
+                logger.LogInformation("{Home} vs {Away}: status={Status} – väntar",
                     match.HomeTeam, match.AwayTeam, status);
             }
         }
