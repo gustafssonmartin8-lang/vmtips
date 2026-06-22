@@ -48,14 +48,17 @@ public class ResultFetcherService(
 
         logger.LogInformation("Hämtar resultat för {Count} matcher", pending.Count);
 
-        // Hämta fixtures för idag och imorgon (täcker nattmatcher)
-        var dates = new[] { now.ToString("yyyy-MM-dd"), now.AddDays(-1).ToString("yyyy-MM-dd") };
+        // Hämta fixtures för idag – nattmatcher (t.ex. 03:00 svensk tid) 
+        // är tekniskt igår i UTC, så vi hämtar också igår OM klockan är före 04:00 UTC
         var allFixtures = new List<FixtureResponse>();
-
-        foreach (var date in dates)
+        var todayFixtures = await FetchFixtures(now.ToString("yyyy-MM-dd"), apiKey, ct);
+        if (todayFixtures != null) allFixtures.AddRange(todayFixtures);
+        
+        // Bara hämta igår om det är tidigt på morgonen (nattmatcher)
+        if (now.Hour < 4)
         {
-            var fixtures = await FetchFixtures(date, apiKey, ct);
-            if (fixtures != null) allFixtures.AddRange(fixtures);
+            var yesterdayFixtures = await FetchFixtures(now.AddDays(-1).ToString("yyyy-MM-dd"), apiKey, ct);
+            if (yesterdayFixtures != null) allFixtures.AddRange(yesterdayFixtures);
         }
 
         if (allFixtures.Count == 0) return;
