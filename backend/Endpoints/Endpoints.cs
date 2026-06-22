@@ -15,6 +15,7 @@ public static class Endpoints
         MapMatches(app);
         MapTips(app);
         MapLeaderboard(app);
+        MapLiveScores(app);
         MapAdmin(app);
     }
 
@@ -181,7 +182,24 @@ public static class Endpoints
         });
     }
 
-    static void MapAdmin(WebApplication app)
+
+    static void MapLiveScores(WebApplication app)
+    {
+        // Returns current live scores from in-memory cache
+        app.MapGet("/api/livescores", () =>
+        {
+            var scores = LiveScoreCache.GetAll();
+            return scores.Select(kvp => new {
+                matchId = kvp.Key,
+                homeGoals = kvp.Value.Home,
+                awayGoals = kvp.Value.Away,
+                status = kvp.Value.Status,
+                elapsed = kvp.Value.Elapsed,
+            });
+        });
+    }
+
+        static void MapAdmin(WebApplication app)
     {
         app.MapGet("/api/admin/users", async (AppDbContext db, ClaimsPrincipal user) =>
         {

@@ -302,8 +302,12 @@ export default function Schedule() {
               <div key={`${m.id}-${m.time}-${i}`} className="space-y-0">
               <div
                 className={`flex items-center gap-2 py-2.5 px-3 rounded-xl cursor-pointer
-                           bg-pitch-800 border border-pitch-600 transition-colors
-                           ${m.homeGoals !== null ? 'hover:border-gold-500/50' : 'hover:border-pitch-500'}`}
+                           border transition-colors
+                           ${m.isLive
+                             ? 'bg-red-900/20 border-red-600/60 hover:border-red-500'
+                             : m.homeGoals !== null
+                             ? 'bg-pitch-800 border-pitch-600 hover:border-gold-500/50'
+                             : 'bg-pitch-800 border-pitch-600 hover:border-pitch-500'}`}
                 onClick={() => m.homeGoals !== null && setExpandedMatch(ex => ex === m.id ? null : m.id)}>
 
                 {/* Tid */}
@@ -317,9 +321,21 @@ export default function Schedule() {
                   {FLAG(m.homeTeam) && <span className="text-base shrink-0">{FLAG(m.homeTeam)}</span>}
                 </div>
 
-                {/* Resultat / vs */}
-                <div className="w-14 text-center shrink-0">
-                  {m.homeGoals !== null ? (
+                {/* Resultat / vs / live */}
+                <div className="w-16 text-center shrink-0">
+                  {m.isLive ? (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <div className="flex items-center gap-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+                        <span className="font-display text-xl text-white">
+                          {m.liveHomeGoals ?? 0}–{m.liveAwayGoals ?? 0}
+                        </span>
+                      </div>
+                      <span className="text-xs text-red-400 font-bold">
+                        {m.liveStatus === 'HT' ? 'HT' : m.liveElapsed ? `${m.liveElapsed}'` : 'LIVE'}
+                      </span>
+                    </div>
+                  ) : m.homeGoals !== null ? (
                     <span className="font-display text-xl text-white">
                       {m.homeGoals}–{m.awayGoals}
                     </span>
