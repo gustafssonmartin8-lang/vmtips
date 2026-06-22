@@ -9,6 +9,8 @@ import Leaderboard from './pages/Leaderboard'
 import Admin from './pages/Admin'
 import Stats from './pages/Stats'
 import Achievements from './pages/Achievements'
+import Groups from './pages/Groups'
+import Bracket from './pages/Bracket'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth()
@@ -32,6 +34,8 @@ export default function App() {
             <Route path="admin"       element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             <Route path="statistik"   element={<Stats />} />
             <Route path="achievements" element={<Achievements />} />
+            <Route path="grupper"      element={<Groups />} />
+            <Route path="slutspel"     element={<Bracket />} />
           </Route>
         </Routes>
       </BrowserRouter>
