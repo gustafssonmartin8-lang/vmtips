@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
-import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2, Award, Menu, X } from 'lucide-react'
+import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2, Award, Menu, X, Grid3x3, GitBranch, Home } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function Layout() {
