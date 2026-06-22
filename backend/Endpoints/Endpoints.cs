@@ -4,9 +4,10 @@ using VmTips.Data;
 using VmTips.DTOs;
 using VmTips.Models;
 using VmTips.Services;
-record VoteRequest(string Vote);
 
 namespace VmTips.Endpoints;
+
+record VoteRequest(string Vote);
 
 public static class Endpoints
 {
