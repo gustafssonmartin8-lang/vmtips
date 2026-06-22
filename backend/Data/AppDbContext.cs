@@ -12,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> opts) : DbContext(opts)
     public DbSet<Tip> Tips => Set<Tip>();
     public DbSet<SidoTip> SidoTips => Set<SidoTip>();
     public DbSet<SidoAnswer> SidoAnswers => Set<SidoAnswer>();
+    public DbSet<MatchPoll> MatchPolls => Set<MatchPoll>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
