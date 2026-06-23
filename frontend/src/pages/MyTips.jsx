@@ -42,7 +42,6 @@ export default function MyTips() {
   const [sidoForm, setSidoForm]   = useState({ skyttekung:'', assistkung:'', gultKort:'' })
   const { activeGroup } = useAuth()
   const [collapsed, setCollapsed] = useState({})
-  const [tipFilter, setTipFilter] = useState('all')
 
   const load = useCallback(async () => {
     const [md, mc] = await Promise.all([api.get(`/tips/me?groupId=${activeGroup?.id || 1}`), api.get('/matches')])
@@ -205,41 +204,18 @@ export default function MyTips() {
                         </span>
                       </div>
 
-                      {/* Score inputs or locked */}
-                      {match.isLocked ? (
-                        <div className="flex items-center gap-1.5">
-                          <Lock size={12} className="text-white/30" />
-                          <span className="text-lg font-bold text-white/60 w-6 text-center">
-                            {tip.home !== '' ? tip.home : '–'}
-                          </span>
-                          <span className="text-white/30">–</span>
-                          <span className="text-lg font-bold text-white/60 w-6 text-center">
-                            {tip.away !== '' ? tip.away : '–'}
-                          </span>
-                          {pointsBadge(pts, match.isLocked && match.homeGoals !== null)}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5">
-                          <input type="number" min="0" max="99"
-                            className="score-input"
-                            value={tip.home}
-                            onChange={e => handleChange(match.id, 'home', e.target.value)} />
-                          <span className="text-white/30 font-bold">–</span>
-                          <input type="number" min="0" max="99"
-                            className="score-input"
-                            value={tip.away}
-                            onChange={e => handleChange(match.id, 'away', e.target.value)} />
-                          <button
-                            onClick={() => saveTip(match.id)}
-                            disabled={saving[match.id] || tip.home==='' || tip.away===''}
-                            className="ml-1 w-8 h-8 rounded-lg bg-grass-500/20 hover:bg-grass-500/40
-                                       flex items-center justify-center transition-colors disabled:opacity-30">
-                            {saved[match.id] ? <CheckCircle size={16} className="text-grass-400" /> :
-                             saving[match.id] ? <span className="text-xs">⏳</span> :
-                             <span className="text-grass-400 text-lg leading-none">✓</span>}
-                          </button>
-                        </div>
-                      )}
+                      {/* Read-only tip view (editing happens elsewhere) */}
+                      <div className="flex items-center gap-1.5">
+                        {match.isLocked && <Lock size={12} className="text-white/30" />}
+                        <span className="text-lg font-bold text-white/60 w-6 text-center">
+                          {tip.home !== '' ? tip.home : '–'}
+                        </span>
+                        <span className="text-white/30">–</span>
+                        <span className="text-lg font-bold text-white/60 w-6 text-center">
+                          {tip.away !== '' ? tip.away : '–'}
+                        </span>
+                        {pointsBadge(pts, match.isLocked && match.homeGoals !== null)}
+                      </div>
 
                       {/* Away */}
                       <div className="flex-1 flex items-center gap-2 min-w-0">
