@@ -44,9 +44,12 @@ export default function Dashboard() {
       api.get('/matches'),
       api.get(`/tips/me?groupId=${activeGroup.id}`),
     ]).then(([lb, m, me]) => {
-      setLeaderboard(lb.data)
-      setMatches(m.data)
-      setMyData(me.data)
+      setLeaderboard(lb.data || [])
+      setMatches(m.data || [])
+      setMyData(me.data || {})
+      setLoading(false)
+    }).catch(err => {
+      console.error('Dashboard load error:', err)
       setLoading(false)
     })
   }, [activeGroup])
@@ -57,18 +60,18 @@ export default function Dashboard() {
 
   // Next match
   const sortedMatches = [...matches].sort((a, b) =>
-    (SCHEDULE_ORDER.indexOf(a.id) ?? 999) - (SCHEDULE_ORDER.indexOf(b.id) ?? 999)
+    ((SCHEDULE_ORDER.indexOf(a.id) + 1) || 999) - ((SCHEDULE_ORDER.indexOf(b.id) + 1) || 999)
   )
   const nextMatch = sortedMatches.find(m => m.homeGoals === null && m.homeTeam)
   const recentMatches = sortedMatches.filter(m => m.homeGoals !== null).slice(-3).reverse()
 
   // My position
-  const myEntry = leaderboard.find(e => e.username === user?.username)
-  const myRank = leaderboard.findIndex(e => e.username === user?.username) + 1
+  const myEntry = (leaderboard || []).find(e => e.username === user?.username)
+  const myRank = (leaderboard || []).findIndex(e => e.username === user?.username) + 1
 
   // Untipped count
   const unlockedMatches = matches.filter(m => !m.isLocked && m.homeTeam)
-  const tippedIds = new Set(myData?.tips?.map(t => t.matchId) || [])
+  const tippedIds = new Set((myData?.tips || []).map(t => t.matchId))
   const untippedCount = unlockedMatches.filter(m => !tippedIds.has(m.id)).length
 
   const isSweden = nextMatch?.homeTeam === 'Sverige' || nextMatch?.awayTeam === 'Sverige'
@@ -146,7 +149,7 @@ export default function Dashboard() {
           </div>
           {myEntry && (
             <div className="text-xs text-white/30 mt-0.5">
-              av {leaderboard.length} spelare
+              av {(leaderboard || []).length} spelare
             </div>
           )}
         </motion.div>
@@ -178,7 +181,7 @@ export default function Dashboard() {
         className="card cursor-pointer hover:border-gold-500/20 transition-colors">
         <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Topplista · {activeGroup?.name}</div>
         <div className="space-y-2">
-          {leaderboard.slice(0, 5).map((e, i) => {
+          {(leaderboard || []).slice(0, 5).map((e, i) => {
             const isMe = e.username === user?.username
             const medals = ['🥇','🥈','🥉']
             return (
