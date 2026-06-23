@@ -42,6 +42,7 @@ export default function MyTips() {
   const [sidoForm, setSidoForm]   = useState({ skyttekung:'', assistkung:'', gultKort:'' })
   const { activeGroup } = useAuth()
   const [collapsed, setCollapsed] = useState({})
+  const [tipFilter, setTipFilter] = useState('all')
 
   const load = useCallback(async () => {
     const [md, mc] = await Promise.all([api.get(`/tips/me?groupId=${activeGroup?.id || 1}`), api.get('/matches')])
