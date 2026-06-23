@@ -58,7 +58,9 @@ function RecentDots({ tips }) {
 }
 
 function getPeppLine(entry, allEntries, index) {
-  if (index === 0) return '🔥 Leder tävlingen!'
+  const rank = entry.displayRank || (index + 1)
+  const sharedLeaders = allEntries.filter(e => e.displayRank === 1).length
+  if (rank === 1) return sharedLeaders > 1 ? '🔥 Delad ledning!' : '🔥 Leder tävlingen!'
   if (index === allEntries.length - 1) return '💪 Kämpar på – det vänder!'
   if (entry.exactResults >= 3) return `🎯 ${entry.exactResults} exakta träffar!`
   if (entry.longestStreak >= 5) return `🔥 ${entry.longestStreak} matcher i rad med poäng!`
@@ -112,6 +114,16 @@ export default function Leaderboard() {
       setShowMovement(true)
       setTimeout(() => setShowMovement(false), 3000)
     }
+    // Compute shared ranks (ties get same rank)
+    let lastPoints = null, lastRank = 0
+    board.forEach((e, i) => {
+      if (e.totalPoints !== lastPoints) {
+        lastRank = i + 1
+        lastPoints = e.totalPoints
+      }
+      e.displayRank = lastRank
+    })
+
     prevRef.current = board
     setEnriched(board)
     setLoading(false)
@@ -192,7 +204,7 @@ export default function Leaderboard() {
                 <div className="relative flex items-center gap-3">
                   {/* Rank */}
                   <span className="font-display text-2xl text-white/40 w-7 text-center shrink-0">
-                    {i < 3 ? MEDALS[i] : `${i+1}`}
+                    {entry.displayRank <= 3 ? MEDALS[entry.displayRank - 1] : `${entry.displayRank}`}
                   </span>
 
                   {/* Movement */}
