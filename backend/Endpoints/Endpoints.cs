@@ -58,10 +58,16 @@ public static class Endpoints
         app.MapGet("/api/matches", async (AppDbContext db) =>
         {
             var matches = await db.Matches.OrderBy(m => m.Id).ToListAsync();
-            return matches.Select(m => new MatchDto(
-                m.Id, m.HomeTeam, m.AwayTeam,
-                m.HomeGoals, m.AwayGoals,
-                m.MatchDate, m.Round, m.IsLocked));
+            var now = DateTime.UtcNow;
+            return matches.Select(m => {
+                // Lock based on kickoff time; fall back to stored flag if no kickoff known
+                var kickoff = MatchTimeService.GetKickoff(m.Id);
+                bool locked = kickoff != null ? now >= kickoff.Value : m.IsLocked;
+                return new MatchDto(
+                    m.Id, m.HomeTeam, m.AwayTeam,
+                    m.HomeGoals, m.AwayGoals,
+                    m.MatchDate, m.Round, locked);
+            });
         });
     }
 
@@ -131,7 +137,8 @@ public static class Endpoints
             var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var match  = await db.Matches.FindAsync(req.MatchId);
             if (match == null) return Results.NotFound();
-            if (match.IsLocked) return Results.BadRequest("Matchen är låst.");
+            if (MatchTimeService.IsLockedNow(req.MatchId, DateTime.UtcNow))
+                return Results.BadRequest("Matchen är låst.");
             var tip = await db.Tips.FirstOrDefaultAsync(t => t.UserId == userId && t.MatchId == req.MatchId);
             if (tip == null) { tip = new Tip { UserId = userId, MatchId = req.MatchId }; db.Tips.Add(tip); }
             tip.HomeGoals = req.HomeGoals;
@@ -353,7 +360,8 @@ public static class Endpoints
             // Check if match is locked
             var match = await db.Matches.FindAsync(matchId);
             if (match == null) return Results.NotFound();
-            if (match.IsLocked) return Results.BadRequest("Match has started");
+            if (MatchTimeService.IsLockedNow(matchId, DateTime.UtcNow))
+                return Results.BadRequest("Match has started");
 
             // Only one vote per user per match
             var existing = await db.MatchPolls

@@ -46,6 +46,14 @@ public static class MatchTimeService
     public static DateTime? GetKickoff(int matchId) =>
         _kickoffs.TryGetValue(matchId, out var dt) ? dt : null;
 
+    // A match is locked once kickoff time has passed
+    public static bool IsLockedNow(int matchId, DateTime nowUtc)
+    {
+        var kickoff = GetKickoff(matchId);
+        if (kickoff == null) return false;  // unknown kickoff = not locked (knockout TBD)
+        return nowUtc >= kickoff.Value;
+    }
+
     // Active window: from kickoff until 3h after (covers live + FT confirmation)
     public static bool IsInFetchWindow(int matchId, DateTime nowUtc)
     {
@@ -64,4 +72,3 @@ public static class MatchTimeService
     private static DateTime Utc(string date, int hour, int minute) =>
         DateTime.Parse($"{date}T{hour:D2}:{minute:D2}:00Z").ToUniversalTime();
 }
-// cache bust

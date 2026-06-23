@@ -27,6 +27,16 @@ function CountUp({ target, duration = 1200 }) {
   return <>{val}</>
 }
 
+
+// Match IDs in chronological play order
+const SCHEDULE_ORDER = [
+  1,2,7,8,19,13,14,20,25,31,26,32,43,37,44,38,49,50,55,56,61,67,
+  68,62,3,9,10,4,21,15,16,22,33,27,28,34,45,39,46,40,57,51,52,58,
+  63,69,70,64,11,12,17,18,5,6,29,30,35,36,23,24,53,54,47,48,41,42,
+  71,72,65,66,59,60
+]
+const playOrder = id => { const i = SCHEDULE_ORDER.indexOf(id); return i === -1 ? 999 : i }
+
 function RecentDots({ tips }) {
   if (!tips?.length) return null
   const last5 = tips.slice(-5)
@@ -72,13 +82,13 @@ export default function Leaderboard() {
     ])
 
     const playedMatches = matches.data.filter(m => m.homeGoals !== null)
-      .sort((a, b) => a.id - b.id)
+      .sort((a, b) => playOrder(a.id) - playOrder(b.id))
 
     const board = lb.data.map(entry => {
       const userData = tips.data.find(u => u.username === entry.username)
       const userTips = (userData?.tips || [])
         .filter(t => playedMatches.find(m => m.id === t.matchId))
-        .sort((a, b) => a.matchId - b.matchId)
+        .sort((a, b) => playOrder(a.matchId) - playOrder(b.matchId))
 
       const exactResults = userTips.filter(t => t.points === 5).length
       let longestStreak = 0, tempStreak = 0
