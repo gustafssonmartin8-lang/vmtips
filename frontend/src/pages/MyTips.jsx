@@ -38,6 +38,7 @@ export default function MyTips() {
   const [pending, setPending]     = useState({})   // {matchId: {home,away}}
   const [saving, setSaving]       = useState({})
   const [saved, setSaved]         = useState({})
+  const [tipFilter, setTipFilter] = useState('all')
   const [sidoEdit, setSidoEdit]   = useState(false)
   const [sidoForm, setSidoForm]   = useState({ skyttekung:'', assistkung:'', gultKort:'' })
   const { activeGroup } = useAuth()
