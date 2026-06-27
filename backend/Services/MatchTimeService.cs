@@ -66,6 +66,13 @@ public static class MatchTimeService
     public static DateTime? GetKickoff(int matchId) =>
         _kickoffs.TryGetValue(matchId, out var dt) ? dt : null;
 
+    // Matcher som ska vara låsta för tippning oavsett kickoff-tid.
+    // Används för att stänga tippningen i förväg (t.ex. sista gruppomgången).
+    public static readonly HashSet<int> ForceLocked = new()
+    {
+        59, 60, 65, 66, 71, 72,  // sista gruppmatcherna (Grupp J, K, L)
+    };
+
     // Earliest kickoff among all matches in a knockout round (null if none known)
     public static DateTime? GetRoundStart(string round)
     {
@@ -84,6 +91,7 @@ public static class MatchTimeService
     // so all tips for that round must be in before the first match of the round.
     public static bool IsLockedNow(int matchId, DateTime nowUtc, string? round = null)
     {
+        if (ForceLocked.Contains(matchId)) return true;
         if (round != null && RoundMatchIds.ContainsKey(round))
         {
             var roundStart = GetRoundStart(round);

@@ -61,9 +61,12 @@ public static class Endpoints
             var now = DateTime.UtcNow;
             return matches.Select(m => {
                 // Knockout rounds lock at the round's first kickoff; group matches at own kickoff.
+                // ForceLocked-matcher låses oavsett tid (hanteras i IsLockedNow).
                 bool locked;
                 if (MatchTimeService.RoundMatchIds.ContainsKey(m.Round))
                     locked = MatchTimeService.IsLockedNow(m.Id, now, m.Round);
+                else if (MatchTimeService.ForceLocked.Contains(m.Id))
+                    locked = true;
                 else
                 {
                     var kickoff = MatchTimeService.GetKickoff(m.Id);
