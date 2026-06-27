@@ -60,9 +60,15 @@ public static class Endpoints
             var matches = await db.Matches.OrderBy(m => m.Id).ToListAsync();
             var now = DateTime.UtcNow;
             return matches.Select(m => {
-                // Lock based on kickoff time; fall back to stored flag if no kickoff known
-                var kickoff = MatchTimeService.GetKickoff(m.Id);
-                bool locked = kickoff != null ? now >= kickoff.Value : m.IsLocked;
+                // Knockout rounds lock at the round's first kickoff; group matches at own kickoff.
+                bool locked;
+                if (MatchTimeService.RoundMatchIds.ContainsKey(m.Round))
+                    locked = MatchTimeService.IsLockedNow(m.Id, now, m.Round);
+                else
+                {
+                    var kickoff = MatchTimeService.GetKickoff(m.Id);
+                    locked = kickoff != null ? now >= kickoff.Value : m.IsLocked;
+                }
                 return new MatchDto(
                     m.Id, m.HomeTeam, m.AwayTeam,
                     m.HomeGoals, m.AwayGoals,
@@ -137,7 +143,7 @@ public static class Endpoints
             var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var match  = await db.Matches.FindAsync(req.MatchId);
             if (match == null) return Results.NotFound();
-            if (MatchTimeService.IsLockedNow(req.MatchId, DateTime.UtcNow))
+            if (MatchTimeService.IsLockedNow(req.MatchId, DateTime.UtcNow, match.Round))
                 return Results.BadRequest("Matchen är låst.");
             var tip = await db.Tips.FirstOrDefaultAsync(t => t.UserId == userId && t.MatchId == req.MatchId);
             if (tip == null) { tip = new Tip { UserId = userId, MatchId = req.MatchId }; db.Tips.Add(tip); }
@@ -295,6 +301,33 @@ public static class Endpoints
             match.IsLocked  = req.IsLocked;
             await db.SaveChangesAsync();
             return Results.Ok();
+        }).RequireAuthorization();
+
+        // Populate the 16 Sextondelsfinal (R32) matches (DB-id 89-104) with computed pairings.
+        // Team names come from the client bracket logic (FIFA Annex C). Guarded: admin + all group matches played.
+        app.MapPost("/api/admin/bracket/r32", async (PopulateR32Request req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            if (req.Pairs == null || req.Pairs.Count != 16)
+                return Results.BadRequest("Förväntade 16 paringar.");
+
+            var groupPlayed = await db.Matches
+                .Where(m => m.Round.StartsWith("Grupp") && m.HomeGoals != null)
+                .CountAsync();
+            if (groupPlayed < 72)
+                return Results.BadRequest($"Gruppspelet ej klart ({groupPlayed}/72 spelade).");
+
+            // R32 DB ids are 89..104 in pairing order
+            for (int i = 0; i < 16; i++)
+            {
+                var id = 89 + i;
+                var match = await db.Matches.FindAsync(id);
+                if (match == null) continue;
+                match.HomeTeam = req.Pairs[i].HomeTeam;
+                match.AwayTeam = req.Pairs[i].AwayTeam;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok(new { updated = 16 });
         }).RequireAuthorization();
 
         app.MapPut("/api/admin/sido/{groupId}", async (int groupId, SidoAnswerDto req, AppDbContext db, ClaimsPrincipal user) =>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { FIFA_ANNEX_C } from '../lib/fifaAnnexC'
+import { useAuth } from '../hooks/useAuth'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
@@ -155,6 +156,9 @@ function MatchCard({ home, away, prelim, type }) {
 export default function Bracket() {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState(null)
+  const { user } = useAuth()
 
   useEffect(() => {
     api.get('/matches').then(r => { setMatches(r.data); setLoading(false) })
@@ -163,6 +167,24 @@ export default function Bracket() {
   if (loading) return <div className="flex items-center justify-center h-64 text-white/40">Laddar...</div>
 
   const { r32, mapping, combinationKey, top8thirds } = buildBracket(matches)
+
+  // Group stage complete?
+  const groupPlayed = matches.filter(m => m.round?.startsWith('Grupp') && m.homeGoals !== null).length
+  const groupComplete = groupPlayed >= 72
+
+  // Push computed R32 pairings to backend so they become tippable
+  const populateR32 = async () => {
+    setSaving(true); setSaveMsg(null)
+    try {
+      const pairs = r32.map(m => ({ homeTeam: m.home || null, awayTeam: m.away || null }))
+      await api.post('/admin/bracket/r32', { pairs })
+      setSaveMsg('✅ Sextondelsfinalerna är ifyllda – nu kan alla tippa dem under Mina Tips.')
+      const r = await api.get('/matches'); setMatches(r.data)
+    } catch (e) {
+      setSaveMsg('⚠️ ' + (e?.response?.data || 'Kunde inte fylla i. Är gruppspelet klart?'))
+    }
+    setSaving(false)
+  }
 
   // Check for confirmed KO matches
   const koMatches = matches.filter(m =>
@@ -222,6 +244,27 @@ export default function Bracket() {
         <h1 className="font-display text-4xl text-gold-400 tracking-wide">Slutspel</h1>
         <p className="text-white/40 text-sm mt-0.5">VM 2026 · Knockout-bracket</p>
       </div>
+
+      {/* Admin: fyll i sextondelsfinaler för tippning */}
+      {user?.isAdmin && (
+        <div className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-pitch-800 border border-gold-500/30">
+          <div className="text-sm text-white/70">
+            {groupComplete
+              ? 'Gruppspelet är klart. Fyll i sextondelsfinalerna så de blir tippbara.'
+              : `Gruppspelet pågår (${groupPlayed}/72 spelade). Knappen aktiveras när alla gruppmatcher är spelade.`}
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={populateR32} disabled={!groupComplete || saving}
+              className="px-4 py-1.5 rounded-lg text-sm font-bold bg-gold-500 text-pitch-900 disabled:opacity-30">
+              {saving ? 'Fyller i…' : 'Fyll i sextondelsfinaler'}
+            </button>
+            {combinationKey && (
+              <span className="text-xs text-white/40">Annex C: <span className="font-mono">{combinationKey}</span></span>
+            )}
+          </div>
+          {saveMsg && <div className="text-xs text-white/70">{saveMsg}</div>}
+        </div>
+      )}
 
       {/* Status */}
       {hasPrelim && (

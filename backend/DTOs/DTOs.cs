@@ -24,3 +24,7 @@ public record UpdatePasswordRequest(string NewPassword);
 public record SetResultRequest(int? HomeGoals, int? AwayGoals, string? HomeTeam, string? AwayTeam, bool IsLocked);
 public record CreateGroupRequest(string Name);
 public record AddUserToGroupRequest(int UserId, int GroupId);
+
+// Pairing for one knockout match (team names computed client-side from bracket logic)
+public record BracketPairDto(string? HomeTeam, string? AwayTeam);
+public record PopulateR32Request(List<BracketPairDto> Pairs);

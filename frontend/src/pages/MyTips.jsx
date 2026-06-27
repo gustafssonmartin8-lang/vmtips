@@ -6,7 +6,7 @@ import { Lock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const ROUNDS_ORDER = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
   'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L',
-  'Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
+  'Sextondelsfinal','Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
 
 // Schedule order: sort matches by ID (follows chronological order)
 const sortBySchedule = (matches) => [...matches].sort((a, b) => a.id - b.id)
@@ -205,18 +205,40 @@ export default function MyTips() {
                         </span>
                       </div>
 
-                      {/* Read-only tip view (editing happens elsewhere) */}
-                      <div className="flex items-center gap-1.5">
-                        {match.isLocked && <Lock size={12} className="text-white/30" />}
-                        <span className="text-lg font-bold text-white/60 w-6 text-center">
-                          {tip.home !== '' ? tip.home : '–'}
-                        </span>
-                        <span className="text-white/30">–</span>
-                        <span className="text-lg font-bold text-white/60 w-6 text-center">
-                          {tip.away !== '' ? tip.away : '–'}
-                        </span>
-                        {pointsBadge(pts, match.isLocked && match.homeGoals !== null)}
-                      </div>
+                      {/* Tip: editable when not locked and teams known, else read-only */}
+                      {(match.isLocked || !match.homeTeam || !match.awayTeam) ? (
+                        <div className="flex items-center gap-1.5">
+                          {match.isLocked && <Lock size={12} className="text-white/30" />}
+                          <span className="text-lg font-bold text-white/60 w-6 text-center">
+                            {tip.home !== '' ? tip.home : '–'}
+                          </span>
+                          <span className="text-white/30">–</span>
+                          <span className="text-lg font-bold text-white/60 w-6 text-center">
+                            {tip.away !== '' ? tip.away : '–'}
+                          </span>
+                          {pointsBadge(pts, match.isLocked && match.homeGoals !== null)}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <input type="number" min="0" max="99"
+                            className="score-input"
+                            value={tip.home}
+                            onChange={e => handleChange(match.id, 'home', e.target.value)} />
+                          <span className="text-white/30 font-bold">–</span>
+                          <input type="number" min="0" max="99"
+                            className="score-input"
+                            value={tip.away}
+                            onChange={e => handleChange(match.id, 'away', e.target.value)} />
+                          <button
+                            onClick={() => saveTip(match.id)}
+                            disabled={saving[match.id] || tip.home==='' || tip.away===''}
+                            className="ml-1 w-8 h-8 rounded-lg bg-grass-500/20 hover:bg-grass-500/40 flex items-center justify-center transition-colors disabled:opacity-30">
+                            {saved[match.id] ? <CheckCircle size={16} className="text-grass-400" /> :
+                             saving[match.id] ? <span className="text-xs">⏳</span> :
+                             <span className="text-grass-400 text-lg leading-none">✓</span>}
+                          </button>
+                        </div>
+                      )}
 
                       {/* Away */}
                       <div className="flex-1 flex items-center gap-2 min-w-0">

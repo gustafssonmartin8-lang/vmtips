@@ -41,16 +41,56 @@ public static class MatchTimeService
         {71,Utc("2026-06-27",21,00)},{72,Utc("2026-06-27",21,00)},
         {65,Utc("2026-06-27",23,30)},{66,Utc("2026-06-27",23,30)},
         {59,Utc("2026-06-28",02,00)},{60,Utc("2026-06-28",02,00)},
+        // Sextondelsfinaler (R32) – DB-id 89-104. Svensk tid -2h = UTC.
+        {89, Utc("2026-06-28",19,00)},{90, Utc("2026-06-29",17,00)},
+        {91, Utc("2026-06-29",20,30)},{92, Utc("2026-06-30",01,00)},
+        {93, Utc("2026-06-30",17,00)},{94, Utc("2026-06-30",21,00)},
+        {95, Utc("2026-07-01",01,00)},{96, Utc("2026-07-01",16,00)},
+        {97, Utc("2026-07-01",20,00)},{98, Utc("2026-07-02",00,00)},
+        {99, Utc("2026-07-02",19,00)},{100,Utc("2026-07-03",01,00)}, // 03:00 svensk -> 01:00 UTC? 03-2=01
+        {101,Utc("2026-07-03",03,00)},{102,Utc("2026-07-03",18,00)},
+        {103,Utc("2026-07-04",00,00)},{104,Utc("2026-07-04",02,00)},
+    };
+
+    // Which DB match-ids belong to each knockout round (for round-level locking)
+    public static readonly Dictionary<string, int[]> RoundMatchIds = new()
+    {
+        ["Sextondelsfinal"] = new[] {89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104},
+        ["Åttondelsfinal"]  = new[] {73,74,75,76,77,78,79,80},
+        ["Kvartsfinal"]     = new[] {81,82,83,84},
+        ["Semifinal"]       = new[] {85,86},
+        ["Match om 3:e plats"] = new[] {87},
+        ["Final"]           = new[] {88},
     };
 
     public static DateTime? GetKickoff(int matchId) =>
         _kickoffs.TryGetValue(matchId, out var dt) ? dt : null;
 
-    // A match is locked once kickoff time has passed
-    public static bool IsLockedNow(int matchId, DateTime nowUtc)
+    // Earliest kickoff among all matches in a knockout round (null if none known)
+    public static DateTime? GetRoundStart(string round)
     {
+        if (!RoundMatchIds.TryGetValue(round, out var ids)) return null;
+        DateTime? earliest = null;
+        foreach (var id in ids)
+        {
+            var k = GetKickoff(id);
+            if (k != null && (earliest == null || k < earliest)) earliest = k;
+        }
+        return earliest;
+    }
+
+    // A match is locked once kickoff time has passed.
+    // For knockout rounds the WHOLE round locks when the round's first match starts,
+    // so all tips for that round must be in before the first match of the round.
+    public static bool IsLockedNow(int matchId, DateTime nowUtc, string? round = null)
+    {
+        if (round != null && RoundMatchIds.ContainsKey(round))
+        {
+            var roundStart = GetRoundStart(round);
+            return roundStart != null && nowUtc >= roundStart.Value;
+        }
         var kickoff = GetKickoff(matchId);
-        if (kickoff == null) return false;  // unknown kickoff = not locked (knockout TBD)
+        if (kickoff == null) return false;  // unknown kickoff = not locked
         return nowUtc >= kickoff.Value;
     }
 
