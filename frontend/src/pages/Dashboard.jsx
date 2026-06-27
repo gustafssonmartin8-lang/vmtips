@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { Avatar } from '../lib/avatars'
 import { Trophy, Calendar, Star, Users, BarChart2, GitBranch, Grid3x3 } from 'lucide-react'
 
 const FLAG = t => ({
@@ -90,11 +91,14 @@ export default function Dashboard() {
     <div className="space-y-5 max-w-3xl mx-auto">
 
       {/* Welcome */}
-      <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}}>
-        <h1 className="font-display text-3xl sm:text-4xl text-white tracking-wide">
-          👋 Hej, <span className="text-gold-400">{user?.username}</span>!
-        </h1>
-        <p className="text-white/40 text-sm mt-1">VM 2026 · {activeGroup?.name}</p>
+      <motion.div initial={{opacity:0,y:-10}} animate={{opacity:1,y:0}} className="flex items-center gap-3">
+        <Avatar username={user?.username} size={52} ring />
+        <div>
+          <h1 className="font-display text-3xl sm:text-4xl text-white tracking-wide">
+            Hej, <span className="text-gold-400">{user?.username}</span>!
+          </h1>
+          <p className="text-white/40 text-sm mt-1">VM 2026 · {activeGroup?.name}</p>
+        </div>
       </motion.div>
 
       {/* Next match */}
@@ -188,6 +192,7 @@ export default function Dashboard() {
               <div key={e.username} className={`flex items-center gap-3 px-3 py-2 rounded-xl
                 ${isMe ? 'bg-gold-500/10 border border-gold-500/20' : 'bg-pitch-700/30'}`}>
                 <span className="text-lg w-6 text-center">{medals[i] || `${i+1}`}</span>
+                <Avatar username={e.username} size={28} ring={isMe} />
                 <span className={`flex-1 font-medium text-sm ${isMe ? 'text-gold-400' : 'text-white/80'}`}>
                   {e.username} {isMe && '(du)'}
                 </span>

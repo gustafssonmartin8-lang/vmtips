@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
+import { Avatar } from '../lib/avatars'
 import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2, Award, Menu, X, Grid3x3, GitBranch, Home } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
@@ -88,9 +89,15 @@ export default function Layout() {
             )}
 
             {/* Username – desktop only */}
-            <span className="text-sm text-white/50 hidden xl:block">
+            <span className="text-sm text-white/50 hidden xl:flex items-center gap-2">
+              <Avatar username={user?.username} size={30} ring />
               <span className="text-white font-medium">{user?.username}</span>
               {user?.isAdmin && <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400">Admin</span>}
+            </span>
+
+            {/* Avatar only – desktop lg..xl (full name shows from xl) */}
+            <span className="hidden lg:flex xl:hidden">
+              <Avatar username={user?.username} size={30} ring />
             </span>
 
             {/* Logout – desktop */}
@@ -99,6 +106,11 @@ export default function Layout() {
                          text-white/50 hover:text-red-400 text-xs py-1.5 px-3 rounded-xl transition-all">
               <LogOut size={13} />Logga ut
             </button>
+
+            {/* Avatar – mobile/tablet (next to hamburger) */}
+            <span className="lg:hidden">
+              <Avatar username={user?.username} size={30} ring />
+            </span>
 
             {/* Hamburger – mobile/tablet */}
             <button onClick={() => setMenuOpen(o => !o)}
@@ -119,8 +131,9 @@ export default function Layout() {
 
               {/* User info */}
               <div className="px-4 py-3 border-b border-pitch-800 flex items-center justify-between">
-                <span className="text-white font-medium">
-                  👋 {user?.username}
+                <span className="text-white font-medium flex items-center gap-2">
+                  <Avatar username={user?.username} size={32} ring />
+                  {user?.username}
                   {user?.isAdmin && <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400">Admin</span>}
                 </span>
                 {multiGroup && (

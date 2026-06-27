@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { Avatar } from '../lib/avatars'
 
 const MEDALS = ['🥇','🥈','🥉']
 const MEDAL_STYLES = [
@@ -160,6 +161,7 @@ export default function Leaderboard() {
                 transition={{ delay: i * 0.1 }}
                 className="flex flex-col items-center gap-2">
                 <div className="text-2xl">{MEDALS[realRank]}</div>
+                <Avatar username={entry.username} size={isCenter ? 56 : 46} ring={isCenter} />
                 <div className={`text-sm font-bold ${entry.username === user?.username ? 'text-gold-400' : 'text-white'}`}>
                   {entry.username}
                 </div>
@@ -218,6 +220,9 @@ export default function Leaderboard() {
                       </motion.span>
                     )}
                   </AnimatePresence>
+
+                  {/* Avatar */}
+                  <Avatar username={entry.username} size={40} ring={isMe} />
 
                   {/* Name + pepp + recent dots */}
                   <div className="flex-1 min-w-0">
