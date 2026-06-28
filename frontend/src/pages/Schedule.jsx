@@ -29,9 +29,13 @@ const TV = {
   55:"TV4", 56:"TV4", 57:"SVT", 58:"TV4", 59:"TV4", 60:"TV4",
   61:"TV4", 62:"TV4", 63:"SVT", 64:"SVT", 65:"TV4", 66:"TV4",
   67:"TV4", 68:"TV4", 69:"SVT", 70:"TV4", 71:"SVT", 72:"SVT",
-  73:"TV4", 74:"TV4", 75:"SVT", 76:"SVT", 77:"TV4",
-  78:"TV4", 79:"TV4", 80:"SVT", 81:"TV4", 82:"SVT",
-  83:"TV4", 84:"SVT", 85:"TV4", 86:"TV4", 87:"TV4", 88:"SVT",
+  // Åttondelsfinaler (id 73-80)
+  73:"TV4", 74:"SVT", 75:"TV4", 76:"SVT", 77:"TV4", 78:"TV4", 79:"TV4", 80:"SVT",
+  // Kvarts/semi/final (id 81-88) – uppdateras vid behov
+  81:"TV4", 82:"SVT", 83:"TV4", 84:"SVT", 85:"TV4", 86:"TV4", 87:"TV4", 88:"SVT",
+  // Sextondelsfinaler (id 89-104)
+  89:"TV4",  90:"TV4",  91:"SVT", 92:"SVT", 93:"TV4", 94:"TV4", 95:"TV4", 96:"SVT",
+  97:"TV4",  98:"TV4",  99:"SVT", 100:"TV4", 101:"TV4", 102:"TV4", 103:"SVT", 104:"SVT",
 }
 
 const SCHEDULE = [
@@ -126,14 +130,14 @@ const SCHEDULE = [
   {id:103, home:'Argentina',       away:'Kap Verde',       date:'2026-07-04', time:'00:00', round:'Sextondelsfinal'},
   {id:104, home:'Colombia',        away:'Ghana',           date:'2026-07-04', time:'03:30', round:'Sextondelsfinal'},
   // Åttondelsfinaler (id 73-80) – lag fylls senare
-  {id:73, home:null, away:null, date:'2026-07-04', time:'19:00', round:'Åttondelsfinal'},
-  {id:74, home:null, away:null, date:'2026-07-04', time:'23:00', round:'Åttondelsfinal'},
-  {id:75, home:null, away:null, date:'2026-07-05', time:'22:00', round:'Åttondelsfinal'},
-  {id:76, home:null, away:null, date:'2026-07-06', time:'02:00', round:'Åttondelsfinal'},
-  {id:77, home:null, away:null, date:'2026-07-06', time:'21:00', round:'Åttondelsfinal'},
-  {id:78, home:null, away:null, date:'2026-07-07', time:'02:00', round:'Åttondelsfinal'},
-  {id:79, home:null, away:null, date:'2026-07-07', time:'18:00', round:'Åttondelsfinal'},
-  {id:80, home:null, away:null, date:'2026-07-07', time:'22:00', round:'Åttondelsfinal'},
+  {id:73, home:null, away:null, homePath:'Vinnare Sydafrika/Kanada',  awayPath:'Vinnare Nederländerna/Marocko', date:'2026-07-04', time:'19:00', round:'Åttondelsfinal'},
+  {id:74, home:null, away:null, homePath:'Vinnare Tyskland/Paraguay', awayPath:'Vinnare Frankrike/Sverige',      date:'2026-07-04', time:'23:00', round:'Åttondelsfinal'},
+  {id:75, home:null, away:null, homePath:'Vinnare Brasilien/Japan',   awayPath:'Vinnare Elfenbenskusten/Norge',  date:'2026-07-05', time:'22:00', round:'Åttondelsfinal'},
+  {id:76, home:null, away:null, homePath:'Vinnare Mexiko/Ecuador',    awayPath:'Vinnare England/DR Kongo',       date:'2026-07-06', time:'02:00', round:'Åttondelsfinal'},
+  {id:77, home:null, away:null, homePath:'Vinnare Portugal/Kroatien', awayPath:'Vinnare Spanien/Österrike',      date:'2026-07-06', time:'21:00', round:'Åttondelsfinal'},
+  {id:78, home:null, away:null, homePath:'Vinnare USA/Bosnien-Hercegovina', awayPath:'Vinnare Belgien/Senegal',  date:'2026-07-07', time:'02:00', round:'Åttondelsfinal'},
+  {id:79, home:null, away:null, homePath:'Vinnare Argentina/Kap Verde', awayPath:'Vinnare Australien/Egypten',   date:'2026-07-07', time:'18:00', round:'Åttondelsfinal'},
+  {id:80, home:null, away:null, homePath:'Vinnare Schweiz/Algeriet',  awayPath:'Vinnare Colombia/Ghana',         date:'2026-07-07', time:'22:00', round:'Åttondelsfinal'},
   {id:81, home:null, away:null, date:'2026-07-09', time:'22:00', round:'Kvartsfinal'},
   {id:82, home:null, away:null, date:'2026-07-10', time:'21:00', round:'Kvartsfinal'},
   {id:83, home:null, away:null, date:'2026-07-11', time:'23:00', round:'Kvartsfinal'},
@@ -317,15 +321,15 @@ export default function Schedule() {
                              : m.homeGoals !== null
                              ? 'bg-pitch-800 border-pitch-600 hover:border-gold-500/50'
                              : 'bg-pitch-800 border-pitch-600 hover:border-pitch-500'}`}
-                onClick={() => m.homeGoals !== null && setExpandedMatch(ex => ex === m.id ? null : m.id)}>
+                onClick={() => (m.homeTeam || m.homePath) && setExpandedMatch(ex => ex === m.id ? null : m.id)}>
 
                 {/* Tid */}
                 <div className="text-gold-400 font-bold text-sm w-11 shrink-0">{m.time}</div>
 
                 {/* Hemmalag */}
                 <div className="flex items-center gap-1.5 flex-1 justify-end min-w-0">
-                  <span className="text-xs sm:text-sm font-medium text-right truncate text-white/90">
-                    {m.homeTeam || '?'}
+                  <span className={`text-xs sm:text-sm font-medium text-right truncate ${m.homeTeam ? 'text-white/90' : 'text-white/40 italic'}`}>
+                    {m.homeTeam || m.homePath || '?'}
                   </span>
                   {FLAG(m.homeTeam) && <span className="text-base shrink-0">{FLAG(m.homeTeam)}</span>}
                 </div>
@@ -356,8 +360,8 @@ export default function Schedule() {
                 {/* Bortalag */}
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   {FLAG(m.awayTeam) && <span className="text-base shrink-0">{FLAG(m.awayTeam)}</span>}
-                  <span className="text-xs sm:text-sm font-medium truncate text-white/90">
-                    {m.awayTeam || '?'}
+                  <span className={`text-xs sm:text-sm font-medium truncate ${m.awayTeam ? 'text-white/90' : 'text-white/40 italic'}`}>
+                    {m.awayTeam || m.awayPath || '?'}
                   </span>
                 </div>
 
@@ -379,33 +383,47 @@ export default function Schedule() {
                     {m.tv}
                   </div>
                 )}
-                {m.homeGoals !== null && (
-                  <div className="text-white/20 text-xs shrink-0">▾</div>
+                {(m.homeTeam || m.homePath) && (
+                  <div className="text-white/20 text-xs shrink-0">
+                    {expandedMatch === m.id ? '▴' : '▾'}
+                  </div>
                 )}
               </div>
 
-              {/* Expandable points */}
-              {expandedMatch === m.id && allTips.length > 0 && (
+              {/* Expandable: deltagarnas tips/poäng */}
+              {expandedMatch === m.id && (
                 <div className="bg-pitch-700/50 rounded-b-xl px-3 py-2.5 border border-t-0 border-pitch-600 -mt-1">
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-                    {allTips.map(u => {
-                      const tip = u.tips?.find(t => t.matchId === m.id)
-                      if (!tip) return null
-                      const ptColor = tip.points === 5 ? 'text-emerald-400' :
-                                      tip.points >= 3 ? 'text-green-400' :
-                                      tip.points >= 1 ? 'text-yellow-400' : 'text-red-400'
-                      return (
-                        <div key={u.userId} className="flex items-center justify-between
-                          bg-pitch-800/60 rounded-lg px-2.5 py-1.5 text-xs">
-                          <span className="text-white/60">{u.username}</span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-white/50">{tip.homeGoals}–{tip.awayGoals}</span>
-                            <span className={`font-bold ${ptColor}`}>{tip.points}p</span>
+                  {allTips.length === 0 ? (
+                    <div className="text-white/30 text-xs text-center py-1">Inga tips ännu</div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {allTips.map(u => {
+                        const tip = u.tips?.find(t => t.matchId === m.id)
+                        const ptColor = !tip ? '' :
+                                        tip.points === 5 ? 'text-emerald-400' :
+                                        tip.points >= 3 ? 'text-green-400' :
+                                        tip.points >= 1 ? 'text-yellow-400' : 'text-red-400'
+                        return (
+                          <div key={u.userId} className="flex items-center justify-between
+                            bg-pitch-800/60 rounded-lg px-2.5 py-1.5 text-xs">
+                            <span className="text-white/60 truncate mr-1">{u.username}</span>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {!tip ? (
+                                <span className="text-white/20">–</span>
+                              ) : tip.isHidden ? (
+                                <span className="text-white/30" title="Dolt tills matchen är låst">🔒</span>
+                              ) : (
+                                <>
+                                  <span className="text-white/50">{tip.homeGoals}–{tip.awayGoals}</span>
+                                  {m.homeGoals !== null && <span className={`font-bold ${ptColor}`}>{tip.points}p</span>}
+                                </>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
               </div>
