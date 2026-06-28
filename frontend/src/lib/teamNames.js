@@ -8,6 +8,7 @@ export const SHORT_NAME = {
   'Sydkorea': 'S-Korea',
   'Sydafrika': 'S-Afrika',
   'Nederländerna': 'Nederl.',
+  'Australien': 'Austr.',
   'Kap Verde': 'Kap V.',
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
+import { shortName } from '../lib/teamNames'
 import { Lock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const ROUNDS_ORDER = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
@@ -13,7 +14,7 @@ const sortBySchedule = (matches) => [...matches].sort((a, b) => a.id - b.id)
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
-  'Frankrike':'🇫🇷','Argentina':'🇦🇷','Spanien':'🇪🇸','England':'🇬🇧','Portugal':'🇵🇹',
+  'Frankrike':'🇫🇷','Argentina':'🇦🇷','Spanien':'🇪🇸','England':'🏴󠁧󠁢󠁥󠁮󠁧󠁿','Portugal':'🇵🇹',
   'Belgien':'🇧🇪','Nederländerna':'🇳🇱','Tyskland':'🇩🇪','Japan':'🇯🇵','Tunisien':'🇹🇳',
   'Marocko':'🇲🇦','Sydkorea':'🇰🇷','Australien':'🇦🇺','Kroatien':'🇭🇷','Uruguay':'🇺🇾',
   'Schweiz':'🇨🇭','Saudiarabien':'🇸🇦','Ghana':'🇬🇭','Senegal':'🇸🇳','Norge':'🇳🇴',
@@ -200,8 +201,11 @@ export default function MyTips() {
                         <span className="text-sm font-medium text-right truncate hidden sm:block">
                           {FLAG(match.homeTeam)} {match.homeTeam || '?'}
                         </span>
-                        <span className="text-sm font-medium sm:hidden">
-                          {FLAG(match.homeTeam)}
+                        <span className="flex flex-col items-end leading-tight sm:hidden min-w-0">
+                          <span className="text-base">{FLAG(match.homeTeam)}</span>
+                          <span className="text-[11px] font-medium text-white/70 truncate max-w-[64px]">
+                            {match.homeTeam ? shortName(match.homeTeam, true) : '?'}
+                          </span>
                         </span>
                       </div>
 
@@ -245,7 +249,12 @@ export default function MyTips() {
                         <span className="text-sm font-medium truncate hidden sm:block">
                           {FLAG(match.awayTeam)} {match.awayTeam || '?'}
                         </span>
-                        <span className="text-sm sm:hidden">{FLAG(match.awayTeam)}</span>
+                        <span className="flex flex-col items-start leading-tight sm:hidden min-w-0">
+                          <span className="text-base">{FLAG(match.awayTeam)}</span>
+                          <span className="text-[11px] font-medium text-white/70 truncate max-w-[64px]">
+                            {match.awayTeam ? shortName(match.awayTeam, true) : '?'}
+                          </span>
+                        </span>
                       </div>
 
                       {/* Actual result */}
