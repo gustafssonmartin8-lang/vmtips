@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 import { Avatar } from '../lib/avatars'
-import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2, Award, Menu, X, Grid3x3, GitBranch, Home } from 'lucide-react'
+import { Trophy, Calendar, Users, Star, ShieldCheck, LogOut, ChevronDown, BarChart2, Award, Menu, X, Grid3x3, GitBranch, Home, MessageCircle } from 'lucide-react'
 import { useState, useEffect } from 'react'
 
 export default function Layout() {
@@ -23,6 +23,7 @@ export default function Layout() {
     { to: '/alla-tips',   label: 'Alla Tips',  icon: Users },
     { to: '/schema',      label: 'Schema',     icon: Calendar },
     { to: '/topplista',   label: 'Topplista',  icon: Trophy },
+    { to: '/snack',       label: 'Snack',      icon: MessageCircle },
     { to: '/statistik',   label: 'Statistik',  icon: BarChart2 },
     { to: '/achievements',label: 'Märken',     icon: Award },
     ...(user?.isAdmin ? [{ to: '/admin', label: 'Admin', icon: ShieldCheck }] : []),

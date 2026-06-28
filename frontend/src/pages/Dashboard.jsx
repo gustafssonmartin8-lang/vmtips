@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { Avatar } from '../lib/avatars'
+import TipReminder from '../components/TipReminder'
 import { Trophy, Calendar, Star, Users, BarChart2, GitBranch, Grid3x3 } from 'lucide-react'
 
 const FLAG = t => ({
@@ -100,6 +101,9 @@ export default function Dashboard() {
           <p className="text-white/40 text-sm mt-1">VM 2026 · {activeGroup?.name}</p>
         </div>
       </motion.div>
+
+      {/* Tippnings-påminnelse */}
+      <TipReminder matches={matches} tippedIds={tippedIds} />
 
       {/* Next match */}
       {nextMatch && (

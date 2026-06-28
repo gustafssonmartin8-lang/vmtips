@@ -12,6 +12,7 @@ import Achievements from './pages/Achievements'
 import Groups from './pages/Groups'
 import Dashboard from './pages/Dashboard'
 import Bracket from './pages/Bracket'
+import Snack from './pages/Snack'
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { user } = useAuth()
@@ -37,6 +38,7 @@ export default function App() {
             <Route path="achievements" element={<Achievements />} />
             <Route path="grupper"      element={<Groups />} />
             <Route path="slutspel"     element={<Bracket />} />
+            <Route path="snack"        element={<Snack />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -21,6 +21,7 @@ public static class Endpoints
         MapPolls(app);
         MapApiStatus(app);
         MapAdmin(app);
+        MapComments(app);
     }
 
     static void MapAuth(WebApplication app)
@@ -63,19 +64,27 @@ public static class Endpoints
                 // Knockout rounds lock at the round's first kickoff; group matches at own kickoff.
                 // ForceLocked-matcher låses oavsett tid (hanteras i IsLockedNow).
                 bool locked;
+                DateTime? locksAt;
                 if (MatchTimeService.RoundMatchIds.ContainsKey(m.Round))
+                {
+                    locksAt = MatchTimeService.GetRoundStart(m.Round);
                     locked = MatchTimeService.IsLockedNow(m.Id, now, m.Round);
+                }
                 else if (MatchTimeService.ForceLocked.Contains(m.Id))
+                {
+                    locksAt = MatchTimeService.GetKickoff(m.Id);
                     locked = true;
+                }
                 else
                 {
-                    var kickoff = MatchTimeService.GetKickoff(m.Id);
-                    locked = kickoff != null ? now >= kickoff.Value : m.IsLocked;
+                    locksAt = MatchTimeService.GetKickoff(m.Id);
+                    locked = locksAt != null ? now >= locksAt.Value : m.IsLocked;
                 }
                 return new MatchDto(
                     m.Id, m.HomeTeam, m.AwayTeam,
                     m.HomeGoals, m.AwayGoals,
-                    m.MatchDate, m.Round, locked);
+                    m.MatchDate, m.Round, locked,
+                    locksAt?.ToString("o"));
             });
         });
     }
@@ -447,6 +456,90 @@ public static class Endpoints
                 remaining = 80 - ResultFetcherService.RequestsToday,
                 date = DateOnly.FromDateTime(DateTime.UtcNow).ToString()
             });
+        }).RequireAuthorization();
+    }
+
+    static void MapComments(WebApplication app)
+    {
+        // Hämta kommentarer för en grupp (nyaste sist)
+        app.MapGet("/api/comments", async (int groupId, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            // Bara medlemmar i gruppen får läsa
+            var isMember = await db.UserGroups.AnyAsync(ug => ug.GroupId == groupId && ug.UserId == userId);
+            if (!isMember) return Results.Forbid();
+
+            var comments = await db.Comments
+                .Where(c => c.GroupId == groupId)
+                .OrderBy(c => c.CreatedAt)
+                .Select(c => new
+                {
+                    c.Id, c.UserId, c.Text, c.CreatedAt,
+                    Username = c.User.Username,
+                    Reactions = c.Reactions.Select(r => new { r.Emoji, r.UserId }).ToList()
+                })
+                .ToListAsync();
+
+            var dto = comments.Select(c => new CommentDto(
+                c.Id, c.UserId, c.Username, c.Text, c.CreatedAt.ToString("o"),
+                c.UserId == userId,
+                c.Reactions
+                    .GroupBy(r => r.Emoji)
+                    .Select(g => new ReactionGroupDto(g.Key, g.Count(), g.Any(x => x.UserId == userId)))
+                    .OrderByDescending(r => r.Count)
+                    .ToList()
+            )).ToList();
+
+            return Results.Ok(dto);
+        }).RequireAuthorization();
+
+        // Posta en kommentar
+        app.MapPost("/api/comments", async (PostCommentRequest req, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var isMember = await db.UserGroups.AnyAsync(ug => ug.GroupId == req.GroupId && ug.UserId == userId);
+            if (!isMember) return Results.Forbid();
+
+            var text = (req.Text ?? "").Trim();
+            if (text.Length == 0) return Results.BadRequest("Tom kommentar.");
+            if (text.Length > 500) text = text[..500];
+
+            var comment = new Comment { GroupId = req.GroupId, UserId = userId, Text = text, CreatedAt = DateTime.UtcNow };
+            db.Comments.Add(comment);
+            await db.SaveChangesAsync();
+            return Results.Ok(new { comment.Id });
+        }).RequireAuthorization();
+
+        // Radera egen kommentar (eller admin)
+        app.MapDelete("/api/comments/{id}", async (int id, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var comment = await db.Comments.FindAsync(id);
+            if (comment == null) return Results.NotFound();
+            if (comment.UserId != userId && !IsAdmin(user)) return Results.Forbid();
+            db.Comments.Remove(comment);
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+
+        // Toggla emoji-reaktion på en kommentar
+        app.MapPost("/api/comments/{id}/react", async (int id, ReactRequest req, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var comment = await db.Comments.FindAsync(id);
+            if (comment == null) return Results.NotFound();
+            var isMember = await db.UserGroups.AnyAsync(ug => ug.GroupId == comment.GroupId && ug.UserId == userId);
+            if (!isMember) return Results.Forbid();
+
+            var emoji = (req.Emoji ?? "").Trim();
+            if (emoji.Length == 0) return Results.BadRequest("Tom emoji.");
+
+            var existing = await db.CommentReactions
+                .FirstOrDefaultAsync(r => r.CommentId == id && r.UserId == userId && r.Emoji == emoji);
+            if (existing != null) db.CommentReactions.Remove(existing);   // toggle av
+            else db.CommentReactions.Add(new CommentReaction { CommentId = id, UserId = userId, Emoji = emoji });
+            await db.SaveChangesAsync();
+            return Results.Ok();
         }).RequireAuthorization();
     }
 

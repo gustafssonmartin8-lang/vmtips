@@ -86,3 +86,26 @@ public class MatchPoll
     // "1" = home win, "X" = draw, "2" = away win
     public string Vote { get; set; } = string.Empty;
 }
+
+// Group chat / "snack" comment
+public class Comment
+{
+    public int Id { get; set; }
+    public int GroupId { get; set; }
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    [Required] public string Text { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ICollection<CommentReaction> Reactions { get; set; } = new List<CommentReaction>();
+}
+
+// Emoji reaction on a comment (one emoji per user per comment)
+public class CommentReaction
+{
+    public int Id { get; set; }
+    public int CommentId { get; set; }
+    public Comment Comment { get; set; } = null!;
+    public int UserId { get; set; }
+    public User User { get; set; } = null!;
+    [Required] public string Emoji { get; set; } = "";
+}

@@ -13,6 +13,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> opts) : DbContext(opts)
     public DbSet<SidoTip> SidoTips => Set<SidoTip>();
     public DbSet<SidoAnswer> SidoAnswers => Set<SidoAnswer>();
     public DbSet<MatchPoll> MatchPolls => Set<MatchPoll>();
+    public DbSet<Comment> Comments => Set<Comment>();
+    public DbSet<CommentReaction> CommentReactions => Set<CommentReaction>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -20,5 +22,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> opts) : DbContext(opts)
         b.Entity<Tip>().HasIndex(t => new { t.UserId, t.MatchId }).IsUnique();
         b.Entity<SidoTip>().HasIndex(s => s.UserId).IsUnique();
         b.Entity<SidoAnswer>().HasIndex(s => s.GroupId).IsUnique();
+        b.Entity<Comment>().HasIndex(c => c.GroupId);
+        b.Entity<CommentReaction>().HasIndex(r => r.CommentId);
+        // En emoji per användare per kommentar
+        b.Entity<CommentReaction>().HasIndex(r => new { r.CommentId, r.UserId, r.Emoji }).IsUnique();
     }
 }

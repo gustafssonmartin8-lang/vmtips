@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { shortName } from '../lib/teamNames'
+import TipReminder from '../components/TipReminder'
 import { Lock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 
 const ROUNDS_ORDER = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
@@ -118,6 +119,9 @@ export default function MyTips() {
           <div className="text-xs text-white/40">POÄNG</div>
         </div>
       </div>
+
+      {/* Tippnings-påminnelse */}
+      <TipReminder matches={matches} tippedIds={tippedMatchIds} />
 
       {/* Sido-tipps card */}
       <div className="card">
