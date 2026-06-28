@@ -5,7 +5,7 @@ import { ShieldCheck, Plus, Key, Trophy, Target } from 'lucide-react'
 
 const ROUNDS = ['Grupp A','Grupp B','Grupp C','Grupp D','Grupp E','Grupp F',
   'Grupp G','Grupp H','Grupp I','Grupp J','Grupp K','Grupp L',
-  'Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
+  'Sextondelsfinal','Åttondelsfinal','Kvartsfinal','Semifinal','Match om 3:e plats','Final']
 
 export default function Admin() {
   const [tab, setTab] = useState('results')

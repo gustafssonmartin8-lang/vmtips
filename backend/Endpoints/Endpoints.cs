@@ -327,8 +327,14 @@ public static class Endpoints
             if (match == null) return Results.NotFound();
             match.HomeGoals = req.HomeGoals;
             match.AwayGoals = req.AwayGoals;
-            if (req.HomeTeam != null) match.HomeTeam = req.HomeTeam;
-            if (req.AwayTeam != null) match.AwayTeam = req.AwayTeam;
+            // För slutspelsmatcher styr admin lagen helt (tomt fält = rensa tillbaka till TBD).
+            // För gruppmatcher rörs aldrig lagen (de är seedade).
+            bool isKnockout = !match.Round.StartsWith("Grupp");
+            if (isKnockout)
+            {
+                match.HomeTeam = string.IsNullOrWhiteSpace(req.HomeTeam) ? null : req.HomeTeam.Trim();
+                match.AwayTeam = string.IsNullOrWhiteSpace(req.AwayTeam) ? null : req.AwayTeam.Trim();
+            }
             match.IsLocked  = req.IsLocked;
             await db.SaveChangesAsync();
             return Results.Ok();
