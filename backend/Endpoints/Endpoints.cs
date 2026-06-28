@@ -83,36 +83,55 @@ public static class Endpoints
     static void MapTips(WebApplication app)
     {
         // All users' tips filtered by group
-        app.MapGet("/api/tips/all", async (int groupId, AppDbContext db) =>
+        app.MapGet("/api/tips/all", async (int groupId, ClaimsPrincipal user, AppDbContext db) =>
         {
+            var requesterId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var now = DateTime.UtcNow;
+
             var groupUserIds = await db.UserGroups
                 .Where(ug => ug.GroupId == groupId)
                 .Select(ug => ug.UserId)
                 .ToListAsync();
-            var users   = await db.Users.Where(u => groupUserIds.Contains(u.Id)).ToListAsync();
-            var matches = await db.Matches.ToListAsync();
-            var tips    = await db.Tips.Where(t => groupUserIds.Contains(t.UserId)).ToListAsync();
-            var sidos   = await db.SidoTips.Where(s => groupUserIds.Contains(s.UserId)).ToListAsync();
-            var answer  = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
+            var users    = await db.Users.Where(u => groupUserIds.Contains(u.Id)).ToListAsync();
+            var matchMap = await db.Matches.ToDictionaryAsync(m => m.Id);
+            var tips     = await db.Tips.Where(t => groupUserIds.Contains(t.UserId)).ToListAsync();
+            var sidos    = await db.SidoTips.Where(s => groupUserIds.Contains(s.UserId)).ToListAsync();
+            var answer   = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
+
+            var tipsByUser = tips.GroupBy(t => t.UserId).ToDictionary(g => g.Key, g => g.ToList());
+            var sidoByUser = sidos.ToDictionary(s => s.UserId);
+
+            // En match är "synlig" för andra spelare först när den är låst.
+            bool MatchLocked(Match m) =>
+                MatchTimeService.IsLockedNow(m.Id, now,
+                    MatchTimeService.RoundMatchIds.ContainsKey(m.Round) ? m.Round : null);
 
             return users.Select(u =>
             {
-                var userTips = tips.Where(t => t.UserId == u.Id).ToList();
-                var sido     = sidos.FirstOrDefault(s => s.UserId == u.Id);
+                var userTips = tipsByUser.GetValueOrDefault(u.Id) ?? new List<Tip>();
+                var sido     = sidoByUser.GetValueOrDefault(u.Id);
+                var isSelf   = u.Id == requesterId;
                 var matchPts = userTips.Sum(t =>
-                {
-                    var m = matches.FirstOrDefault(m => m.Id == t.MatchId);
-                    return m == null ? 0 : PointsService.CalcTipPoints(t, m);
-                });
-                var sidoPts = PointsService.CalcSidoPoints(sido, answer);
-                return new UserTipsDto(
-                    u.Id, u.Username,
-                    userTips.Select(t =>
+                    matchMap.TryGetValue(t.MatchId, out var m) ? PointsService.CalcTipPoints(t, m) : 0);
+                var sidoPts  = PointsService.CalcSidoPoints(sido, answer);
+
+                var tipDtos = userTips
+                    .Where(t => matchMap.ContainsKey(t.MatchId))
+                    .Select(t =>
                     {
-                        var m = matches.First(m => m.Id == t.MatchId);
+                        var m = matchMap[t.MatchId];
+                        // Andras tips döljs tills matchen är låst (eget tips alltid synligt)
+                        if (!isSelf && !MatchLocked(m))
+                            return new TipDto(t.MatchId, 0, 0, 0, IsHidden: true);
                         return new TipDto(t.MatchId, t.HomeGoals, t.AwayGoals, PointsService.CalcTipPoints(t, m));
-                    }).ToList(),
-                    sido == null ? null : new SidoTipDto(sido.Skyttekung, sido.Assistkung, sido.GultKort),
+                    }).ToList();
+
+                // Sido-tips är låsta sedan länge och visas för alla
+                SidoTipDto? sidoDto = sido == null ? null
+                    : new SidoTipDto(sido.Skyttekung, sido.Assistkung, sido.GultKort);
+
+                return new UserTipsDto(
+                    u.Id, u.Username, tipDtos, sidoDto,
                     matchPts, sidoPts, matchPts + sidoPts);
             });
         }).RequireAuthorization();

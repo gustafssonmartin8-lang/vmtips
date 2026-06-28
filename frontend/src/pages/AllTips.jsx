@@ -99,13 +99,19 @@ export default function AllTips() {
                       {FLAG(match.homeTeam)} {match.homeTeam || '?'}
                     </span>
                     <div className="flex items-center gap-1 font-bold shrink-0">
-                      <span className={tip ? 'text-white' : 'text-white/20'}>
-                        {tip ? tip.homeGoals : '–'}
-                      </span>
-                      <span className="text-white/30 text-xs">–</span>
-                      <span className={tip ? 'text-white' : 'text-white/20'}>
-                        {tip ? tip.awayGoals : '–'}
-                      </span>
+                      {tip?.isHidden ? (
+                        <span className="text-white/30 text-sm px-1" title="Dolt tills matchen är låst">🔒</span>
+                      ) : (
+                        <>
+                          <span className={tip ? 'text-white' : 'text-white/20'}>
+                            {tip ? tip.homeGoals : '–'}
+                          </span>
+                          <span className="text-white/30 text-xs">–</span>
+                          <span className={tip ? 'text-white' : 'text-white/20'}>
+                            {tip ? tip.awayGoals : '–'}
+                          </span>
+                        </>
+                      )}
                     </div>
                     <span className="flex-1 text-xs sm:text-sm truncate text-white/80">
                       {FLAG(match.awayTeam)} {match.awayTeam || '?'}

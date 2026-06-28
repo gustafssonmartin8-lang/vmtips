@@ -270,7 +270,9 @@ export default function Schedule() {
                         <span className={`font-medium ${u.username === user?.username ? 'text-gold-400' : 'text-white/70'}`}>
                           {u.username}
                         </span>
-                        {tip ? (
+                        {tip?.isHidden ? (
+                          <span className="text-white/40 text-sm" title="Dolt tills matchen är låst">🔒</span>
+                        ) : tip ? (
                           <span className="font-bold text-white">
                             {tip.homeGoals}–{tip.awayGoals}
                           </span>

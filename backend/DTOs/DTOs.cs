@@ -5,7 +5,7 @@ public record LoginResponse(string Token, string Username, bool IsAdmin, int Use
 
 public record GroupDto(int Id, string Name);
 public record MatchDto(int Id, string? HomeTeam, string? AwayTeam, int? HomeGoals, int? AwayGoals, string? MatchDate, string Round, bool IsLocked);
-public record TipDto(int MatchId, int HomeGoals, int AwayGoals, int Points);
+public record TipDto(int MatchId, int HomeGoals, int AwayGoals, int Points, bool IsHidden = false);
 public record SaveTipRequest(int MatchId, int HomeGoals, int AwayGoals);
 public record SidoTipDto(string? Skyttekung, string? Assistkung, string? GultKort);
 public record SidoAnswerDto(string? Skyttekung, string? Assistkung, string? GultKort);
