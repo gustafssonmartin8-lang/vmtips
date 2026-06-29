@@ -34,8 +34,8 @@ const TV = {
   // Kvarts/semi/final (id 81-88) – uppdateras vid behov
   81:"TV4", 82:"SVT", 83:"TV4", 84:"SVT", 85:"TV4", 86:"TV4", 87:"TV4", 88:"SVT",
   // Sextondelsfinaler (id 89-104)
-  89:"TV4",  90:"TV4",  91:"SVT", 92:"SVT", 93:"TV4", 94:"TV4", 95:"TV4", 96:"SVT",
-  97:"TV4",  98:"TV4",  99:"SVT", 100:"TV4", 101:"TV4", 102:"TV4", 103:"SVT", 104:"SVT",
+  89:"TV4",  90:"SVT",  91:"SVT", 92:"TV4", 93:"TV4", 94:"TV4", 95:"TV4", 96:"SVT",
+  97:"TV4",  98:"TV4",  99:"TV4", 100:"SVT", 101:"TV4", 102:"SVT", 103:"SVT", 104:"TV4",
 }
 
 const SCHEDULE = [
@@ -114,21 +114,21 @@ const SCHEDULE = [
   // Slutspel
   // Sextondelsfinaler (R32) – id 89-104. Lag fylls från live-data (admin/bracket) men har fallback här.
   {id:89,  home:'Sydafrika',       away:'Kanada',          date:'2026-06-28', time:'21:00', round:'Sextondelsfinal'},
-  {id:90,  home:'Brasilien',       away:'Japan',           date:'2026-06-29', time:'19:00', round:'Sextondelsfinal'},
-  {id:91,  home:'Tyskland',        away:'Paraguay',        date:'2026-06-29', time:'22:30', round:'Sextondelsfinal'},
-  {id:92,  home:'Nederländerna',   away:'Marocko',         date:'2026-06-30', time:'03:00', round:'Sextondelsfinal'},
-  {id:93,  home:'Elfenbenskusten', away:'Norge',           date:'2026-06-30', time:'19:00', round:'Sextondelsfinal'},
-  {id:94,  home:'Frankrike',       away:'Sverige',         date:'2026-06-30', time:'23:00', round:'Sextondelsfinal'},
+  {id:90,  home:'Tyskland',        away:'Paraguay',        date:'2026-06-29', time:'22:30', round:'Sextondelsfinal'},
+  {id:91,  home:'Nederländerna',   away:'Marocko',         date:'2026-06-30', time:'03:00', round:'Sextondelsfinal'},
+  {id:92,  home:'Brasilien',       away:'Japan',           date:'2026-06-29', time:'19:00', round:'Sextondelsfinal'},
+  {id:93,  home:'Frankrike',       away:'Sverige',         date:'2026-06-30', time:'23:00', round:'Sextondelsfinal'},
+  {id:94,  home:'Elfenbenskusten', away:'Norge',           date:'2026-06-30', time:'19:00', round:'Sextondelsfinal'},
   {id:95,  home:'Mexiko',          away:'Ecuador',         date:'2026-07-01', time:'03:00', round:'Sextondelsfinal'},
   {id:96,  home:'England',         away:'Kongo-Kinshasa',  date:'2026-07-01', time:'18:00', round:'Sextondelsfinal'},
-  {id:97,  home:'Belgien',         away:'Senegal',         date:'2026-07-01', time:'22:00', round:'Sextondelsfinal'},
-  {id:98,  home:'USA',             away:'Bosnien-Hercegovina', date:'2026-07-02', time:'02:00', round:'Sextondelsfinal'},
-  {id:99,  home:'Spanien',         away:'Österrike',       date:'2026-07-02', time:'21:00', round:'Sextondelsfinal'},
-  {id:100, home:'Portugal',        away:'Kroatien',        date:'2026-07-03', time:'01:00', round:'Sextondelsfinal'},
+  {id:97,  home:'USA',             away:'Bosnien-Hercegovina', date:'2026-07-02', time:'02:00', round:'Sextondelsfinal'},
+  {id:98,  home:'Belgien',         away:'Senegal',         date:'2026-07-01', time:'22:00', round:'Sextondelsfinal'},
+  {id:99,  home:'Portugal',        away:'Kroatien',        date:'2026-07-03', time:'01:00', round:'Sextondelsfinal'},
+  {id:100, home:'Spanien',         away:'Österrike',       date:'2026-07-02', time:'21:00', round:'Sextondelsfinal'},
   {id:101, home:'Schweiz',         away:'Algeriet',        date:'2026-07-03', time:'05:00', round:'Sextondelsfinal'},
-  {id:102, home:'Australien',      away:'Egypten',         date:'2026-07-03', time:'20:00', round:'Sextondelsfinal'},
-  {id:103, home:'Argentina',       away:'Kap Verde',       date:'2026-07-04', time:'00:00', round:'Sextondelsfinal'},
-  {id:104, home:'Colombia',        away:'Ghana',           date:'2026-07-04', time:'03:30', round:'Sextondelsfinal'},
+  {id:102, home:'Argentina',       away:'Kap Verde',       date:'2026-07-04', time:'00:00', round:'Sextondelsfinal'},
+  {id:103, home:'Colombia',        away:'Ghana',           date:'2026-07-04', time:'03:30', round:'Sextondelsfinal'},
+  {id:104, home:'Australien',      away:'Egypten',         date:'2026-07-03', time:'20:00', round:'Sextondelsfinal'},
   // Åttondelsfinaler (id 73-80) – lag fylls senare
   {id:73, home:null, away:null, homePath:'Vinnare Sydafrika/Kanada',  awayPath:'Vinnare Nederländerna/Marocko', date:'2026-07-04', time:'19:00', round:'Åttondelsfinal'},
   {id:74, home:null, away:null, homePath:'Vinnare Tyskland/Paraguay', awayPath:'Vinnare Frankrike/Sverige',      date:'2026-07-04', time:'23:00', round:'Åttondelsfinal'},
