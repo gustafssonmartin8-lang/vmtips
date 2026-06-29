@@ -6,6 +6,10 @@ export default function MatchPoll({ match }) {
   const [poll, setPoll] = useState(null)
   const [voting, setVoting] = useState(false)
 
+  // Omröstning stänger vid matchens EGEN avspark (inte rond-låset som styr tippning)
+  const startsAt = match?.startsAt ? new Date(match.startsAt).getTime() : null
+  const pollClosed = startsAt != null && Date.now() >= startsAt
+
   const fetchPoll = () => {
     if (!match?.id) return
     api.get(`/polls/${match.id}`).then(r => setPoll(r.data)).catch(() => {})
@@ -14,14 +18,14 @@ export default function MatchPoll({ match }) {
   useEffect(() => {
     fetchPoll()
     // Refresh poll results every 30s during match
-    if (match?.isLocked && match?.homeGoals === null) {
+    if (pollClosed && match?.homeGoals === null) {
       const iv = setInterval(fetchPoll, 30000)
       return () => clearInterval(iv)
     }
-  }, [match?.id, match?.isLocked])
+  }, [match?.id, pollClosed])
 
   const vote = async (v) => {
-    if (poll?.myVote || voting || match?.isLocked) return
+    if (poll?.myVote || voting || pollClosed) return
     setVoting(true)
     try {
       await api.post(`/polls/${match.id}`, { vote: v })
@@ -35,7 +39,7 @@ export default function MatchPoll({ match }) {
 
   const { myVote, total, votes } = poll
   const pct = (n) => total > 0 ? Math.round((n / total) * 100) : 0
-  const isLocked = match?.isLocked
+  const isLocked = pollClosed
 
   const options = [
     { key: '1', label: match.homeTeam || '?', short: '1' },

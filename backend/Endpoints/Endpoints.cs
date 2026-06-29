@@ -84,7 +84,8 @@ public static class Endpoints
                     m.Id, m.HomeTeam, m.AwayTeam,
                     m.HomeGoals, m.AwayGoals,
                     m.MatchDate, m.Round, locked,
-                    locksAt?.ToString("o"));
+                    locksAt?.ToString("o"),
+                    MatchTimeService.GetKickoff(m.Id)?.ToString("o"));
             });
         });
     }
@@ -430,7 +431,9 @@ public static class Endpoints
             // Check if match is locked
             var match = await db.Matches.FindAsync(matchId);
             if (match == null) return Results.NotFound();
-            if (MatchTimeService.IsLockedNow(matchId, DateTime.UtcNow))
+            // Omröstning stänger vid matchens EGEN avspark (inte rond-låset som styr tippning)
+            var kickoff = MatchTimeService.GetKickoff(matchId);
+            if (kickoff != null && DateTime.UtcNow >= kickoff.Value)
                 return Results.BadRequest("Match has started");
 
             // Only one vote per user per match

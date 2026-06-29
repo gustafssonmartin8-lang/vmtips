@@ -175,6 +175,8 @@ export default function Schedule() {
       homeGoals: apiMatch?.homeGoals ?? null,
       awayGoals: apiMatch?.awayGoals ?? null,
       isLocked: apiMatch?.isLocked ?? false,
+      startsAt: apiMatch?.startsAt ?? null,
+      locksAt: apiMatch?.locksAt ?? null,
       tv: TV[s.id] || null,
     }
   })

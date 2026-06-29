@@ -4,7 +4,7 @@ public record LoginRequest(string Username, string Password);
 public record LoginResponse(string Token, string Username, bool IsAdmin, int UserId, List<GroupDto> Groups);
 
 public record GroupDto(int Id, string Name);
-public record MatchDto(int Id, string? HomeTeam, string? AwayTeam, int? HomeGoals, int? AwayGoals, string? MatchDate, string Round, bool IsLocked, string? LocksAt = null);
+public record MatchDto(int Id, string? HomeTeam, string? AwayTeam, int? HomeGoals, int? AwayGoals, string? MatchDate, string Round, bool IsLocked, string? LocksAt = null, string? StartsAt = null);
 public record TipDto(int MatchId, int HomeGoals, int AwayGoals, int Points, bool IsHidden = false);
 public record SaveTipRequest(int MatchId, int HomeGoals, int AwayGoals);
 public record SidoTipDto(string? Skyttekung, string? Assistkung, string? GultKort);
