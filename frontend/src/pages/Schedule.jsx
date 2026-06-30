@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import MatchPoll from '../components/MatchPoll'
+import SwedenHype from '../components/SwedenHype'
 
 const FLAG = t => ({
   'Sverige':'🇸🇪','Mexiko':'🇲🇽','Kanada':'🇨🇦','USA':'🇺🇸','Brasilien':'🇧🇷',
@@ -221,21 +222,18 @@ export default function Schedule() {
       {nextMatch && filter === 'upcoming' && (() => {
         const isSweden = nextMatch.homeTeam === 'Sverige' || nextMatch.awayTeam === 'Sverige'
         return (
+          <div className="space-y-3">
+            {isSweden && (
+              <SwedenHype
+                home={nextMatch.homeTeam}
+                away={nextMatch.awayTeam}
+                time={nextMatch.time}
+                tv={nextMatch.tv} />
+            )}
           <div className={`card ${isSweden
             ? 'border-yellow-400/60 bg-gradient-to-r from-blue-900/60 via-blue-800/40 to-yellow-900/30'
             : 'border-gold-500/40 bg-gradient-to-r from-pitch-800 to-pitch-700'}`}>
-            {isSweden ? (
-              <>
-                <div className="text-xs font-bold uppercase tracking-widest mb-2 text-yellow-400">
-                  🇸🇪 DAGS FÖR SVERIGE!
-                </div>
-                <div className="text-sm text-blue-200/70 mb-3 italic">
-                  {nextMatch.homeTeam === 'Sverige'
-                    ? '⚽ Vi spelar hemma – ge järnet blågult!'
-                    : '✈️ Borta är bra men hemma är bäst – Sverige tar det här!'}
-                </div>
-              </>
-            ) : (
+            {!isSweden && (
               <div className="text-xs text-gold-400 font-bold uppercase tracking-widest mb-2">⚡ Nästa match</div>
             )}
             <div className="flex items-center gap-2 flex-wrap">
@@ -291,6 +289,7 @@ export default function Schedule() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         )
       })()}
