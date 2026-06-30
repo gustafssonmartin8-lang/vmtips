@@ -205,13 +205,13 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* Top 3 mini leaderboard */}
+      {/* Mini leaderboard – alla spelare */}
       <motion.div initial={{opacity:0,y:10}} animate={{opacity:1,y:0}} transition={{delay:0.15}}
         onClick={() => navigate('/topplista')}
         className="card cursor-pointer hover:border-gold-500/20 transition-colors">
         <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Topplista · {activeGroup?.name}</div>
         <div className="space-y-2">
-          {(leaderboard || []).slice(0, 5).map((e, i) => {
+          {(leaderboard || []).map((e, i) => {
             const isMe = e.username === user?.username
             const medals = ['🥇','🥈','🥉']
             return (
