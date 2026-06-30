@@ -5,6 +5,7 @@ import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { Avatar } from '../lib/avatars'
 import TipReminder from '../components/TipReminder'
+import SwedenHype from '../components/SwedenHype'
 import { Trophy, Calendar, Star, Users, BarChart2, GitBranch, Grid3x3 } from 'lucide-react'
 
 const FLAG = t => ({
@@ -78,6 +79,16 @@ export default function Dashboard() {
 
   const isSweden = nextMatch?.homeTeam === 'Sverige' || nextMatch?.awayTeam === 'Sverige'
 
+  // Spelar Sverige IDAG (svensk lokal dag)? Visa hype-banner hela dagen.
+  const todayStr = new Date().toLocaleDateString('sv-SE') // "2026-06-30"
+  const swedenToday = matches.find(m => {
+    if (m.homeTeam !== 'Sverige' && m.awayTeam !== 'Sverige') return false
+    if (m.homeGoals !== null) return false // redan spelad
+    const when = m.startsAt ? new Date(m.startsAt) : (m.matchDate ? new Date(m.matchDate) : null)
+    if (!when) return false
+    return when.toLocaleDateString('sv-SE') === todayStr
+  })
+
   const quickLinks = [
     { to: '/schema',     label: 'Schema',    icon: Calendar,  color: 'bg-blue-900/40 border-blue-700/50' },
     { to: '/topplista',  label: 'Topplista', icon: Trophy,    color: 'bg-yellow-900/40 border-yellow-700/50' },
@@ -104,6 +115,17 @@ export default function Dashboard() {
 
       {/* Tippnings-påminnelse */}
       <TipReminder matches={matches} tippedIds={tippedIds} />
+
+      {/* Sverige spelar idag! */}
+      {swedenToday && (
+        <SwedenHype
+          home={swedenToday.homeTeam}
+          away={swedenToday.awayTeam}
+          time={swedenToday.startsAt
+            ? new Date(swedenToday.startsAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+            : ''}
+          tv={null} />
+      )}
 
       {/* Next match */}
       {nextMatch && (
