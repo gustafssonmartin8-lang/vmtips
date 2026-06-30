@@ -41,15 +41,23 @@ public static class MatchTimeService
         {71,Utc("2026-06-27",21,00)},{72,Utc("2026-06-27",21,00)},
         {65,Utc("2026-06-27",23,30)},{66,Utc("2026-06-27",23,30)},
         {59,Utc("2026-06-28",02,00)},{60,Utc("2026-06-28",02,00)},
-        // Sextondelsfinaler (R32) – DB-id 89-104. Svensk tid -2h = UTC.
-        {89, Utc("2026-06-28",19,00)},{90, Utc("2026-06-29",17,00)},
-        {91, Utc("2026-06-29",20,30)},{92, Utc("2026-06-30",01,00)},
-        {93, Utc("2026-06-30",17,00)},{94, Utc("2026-06-30",21,00)},
-        {95, Utc("2026-07-01",01,00)},{96, Utc("2026-07-01",16,00)},
-        {97, Utc("2026-07-01",20,00)},{98, Utc("2026-07-02",00,00)},
-        {99, Utc("2026-07-02",19,00)},{100,Utc("2026-07-03",01,00)}, // 03:00 svensk -> 01:00 UTC? 03-2=01
-        {101,Utc("2026-07-03",03,00)},{102,Utc("2026-07-03",18,00)},
-        {103,Utc("2026-07-04",00,00)},{104,Utc("2026-07-04",02,00)},
+        // Sextondelsfinaler (R32) – DB-id 89-104. Svensk tid -2h = UTC. Kopplat till lag på id.
+        {89, Utc("2026-06-28",19,00)},  // Sydafrika-Kanada 21:00 sv
+        {90, Utc("2026-06-29",20,30)},  // Tyskland-Paraguay 22:30 sv
+        {91, Utc("2026-06-30",01,00)},  // Nederländerna-Marocko 03:00 sv
+        {92, Utc("2026-06-29",17,00)},  // Brasilien-Japan 19:00 sv
+        {93, Utc("2026-06-30",21,00)},  // Frankrike-Sverige 23:00 sv
+        {94, Utc("2026-06-30",17,00)},  // Elfenbenskusten-Norge 19:00 sv
+        {95, Utc("2026-07-01",01,00)},  // Mexiko-Ecuador 03:00 sv
+        {96, Utc("2026-07-01",16,00)},  // England-Kongo 18:00 sv
+        {97, Utc("2026-07-02",00,00)},  // USA-Bosnien 02:00 sv
+        {98, Utc("2026-07-01",20,00)},  // Belgien-Senegal 22:00 sv
+        {99, Utc("2026-07-02",23,00)},  // Portugal-Kroatien 01:00 sv
+        {100,Utc("2026-07-02",19,00)},  // Spanien-Österrike 21:00 sv
+        {101,Utc("2026-07-03",03,00)},  // Schweiz-Algeriet 05:00 sv
+        {102,Utc("2026-07-03",22,00)},  // Argentina-Kap Verde 00:00 sv
+        {103,Utc("2026-07-04",01,30)},  // Colombia-Ghana 03:30 sv
+        {104,Utc("2026-07-03",18,00)},  // Australien-Egypten 20:00 sv
     };
 
     // Which DB match-ids belong to each knockout round (for round-level locking)

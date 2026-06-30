@@ -80,13 +80,14 @@ export default function Dashboard() {
   const isSweden = nextMatch?.homeTeam === 'Sverige' || nextMatch?.awayTeam === 'Sverige'
 
   // Spelar Sverige IDAG (svensk lokal dag)? Visa hype-banner hela dagen.
-  const todayStr = new Date().toLocaleDateString('sv-SE') // "2026-06-30"
+  const SE_TZ = { timeZone: 'Europe/Stockholm' }
+  const todayStr = new Date().toLocaleDateString('sv-SE', SE_TZ) // "2026-06-30"
   const swedenToday = matches.find(m => {
     if (m.homeTeam !== 'Sverige' && m.awayTeam !== 'Sverige') return false
     if (m.homeGoals !== null) return false // redan spelad
     const when = m.startsAt ? new Date(m.startsAt) : (m.matchDate ? new Date(m.matchDate) : null)
     if (!when) return false
-    return when.toLocaleDateString('sv-SE') === todayStr
+    return when.toLocaleDateString('sv-SE', SE_TZ) === todayStr
   })
 
   const quickLinks = [
@@ -122,7 +123,7 @@ export default function Dashboard() {
           home={swedenToday.homeTeam}
           away={swedenToday.awayTeam}
           time={swedenToday.startsAt
-            ? new Date(swedenToday.startsAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })
+            ? new Date(swedenToday.startsAt).toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' })
             : ''}
           tv={null} />
       )}
