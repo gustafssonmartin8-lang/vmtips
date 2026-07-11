@@ -30,30 +30,42 @@ function CountUp({ target, duration = 1200 }) {
 
 
 // Match IDs in chronological play order
-const SCHEDULE_ORDER = [
-  1,2,7,8,19,13,14,20,25,31,26,32,43,37,44,38,49,50,55,56,61,67,
-  68,62,3,9,10,4,21,15,16,22,33,27,28,34,45,39,46,40,57,51,52,58,
-  63,69,70,64,11,12,17,18,5,6,29,30,35,36,23,24,53,54,47,48,41,42,
-  71,72,65,66,59,60
-]
-const playOrder = id => { const i = SCHEDULE_ORDER.indexOf(id); return i === -1 ? 999 : i }
+// Kronologisk ordning härleds från matchernas faktiska tid (startsAt/matchDate),
+// så det funkar för alla ronder utan att underhålla en manuell lista.
+function buildOrderMap(matches) {
+  const withTime = matches.map(m => ({
+    id: m.id,
+    t: m.startsAt ? new Date(m.startsAt).getTime()
+       : (m.matchDate ? new Date(m.matchDate).getTime() : Number.MAX_SAFE_INTEGER),
+  }))
+  withTime.sort((a, b) => a.t - b.t || a.id - b.id)
+  const map = {}
+  withTime.forEach((m, i) => { map[m.id] = i })
+  return map
+}
 
 function RecentDots({ tips }) {
   if (!tips?.length) return null
-  const last5 = tips.slice(-5)
+  const last5 = tips.slice(-5)   // kronologiskt: äldst vänster, senast höger
   const color = p => p === 5 ? 'bg-emerald-500' : p >= 3 ? 'bg-green-600' : p >= 1 ? 'bg-yellow-500' : 'bg-red-600'
   return (
     <div className="flex gap-1 items-center">
-      {last5.map((t, i) => (
-        <motion.div key={i}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: i * 0.08 }}
-          className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white ${color(t.points)}`}
-          title={`Match ${t.matchId}: ${t.points}p`}>
-          {t.points}
-        </motion.div>
-      ))}
+      <span className="text-[9px] text-white/25 uppercase tracking-wider mr-0.5">Senaste →</span>
+      {last5.map((t, i) => {
+        const isLatest = i === last5.length - 1
+        const label = `${t.homeTeam || '?'}–${t.awayTeam || '?'}: ${t.points}p`
+        return (
+          <motion.div key={t.matchId}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: i * 0.08 }}
+            className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white
+                        ${color(t.points)} ${isLatest ? 'ring-2 ring-gold-400 ring-offset-1 ring-offset-pitch-800' : ''}`}
+            title={label}>
+            {t.points}
+          </motion.div>
+        )
+      })}
     </div>
   )
 }
@@ -84,6 +96,10 @@ export default function Leaderboard() {
       api.get('/matches'),
     ])
 
+    const orderMap = buildOrderMap(matches.data)
+    const playOrder = id => (id in orderMap ? orderMap[id] : Number.MAX_SAFE_INTEGER)
+    const matchById = Object.fromEntries(matches.data.map(m => [m.id, m]))
+
     const playedMatches = matches.data.filter(m => m.homeGoals !== null)
       .sort((a, b) => playOrder(a.id) - playOrder(b.id))
 
@@ -92,6 +108,9 @@ export default function Leaderboard() {
       const userTips = (userData?.tips || [])
         .filter(t => playedMatches.find(m => m.id === t.matchId))
         .sort((a, b) => playOrder(a.matchId) - playOrder(b.matchId))
+        .map(t => ({ ...t,
+          homeTeam: matchById[t.matchId]?.homeTeam,
+          awayTeam: matchById[t.matchId]?.awayTeam }))
 
       const exactResults = userTips.filter(t => t.points === 5).length
       let longestStreak = 0, tempStreak = 0
