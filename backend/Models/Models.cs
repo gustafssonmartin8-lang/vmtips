@@ -10,6 +10,8 @@ public class User
     [Required] public string PasswordHash { get; set; } = "";
     [Required] public string Salt { get; set; } = "";
     public bool IsAdmin { get; set; }
+    // När användaren senast såg recap-popupen på topplistan (UTC)
+    public DateTime? LastSeenRecapAt { get; set; }
     public ICollection<Tip> Tips { get; set; } = new List<Tip>();
     public SidoTip? SidoTip { get; set; }
     public ICollection<UserGroup> UserGroups { get; set; } = new List<UserGroup>();

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { Avatar } from '../lib/avatars'
+import RecapPopup from '../components/RecapPopup'
 
 const MEDALS = ['🥇','🥈','🥉']
 const MEDAL_STYLES = [
@@ -86,6 +87,7 @@ export default function Leaderboard() {
   const [enriched, setEnriched] = useState([])
   const [loading, setLoading] = useState(true)
   const [showMovement, setShowMovement] = useState(false)
+  const [recap, setRecap] = useState(null)
   const prevRef = useRef([])
   const { user, activeGroup } = useAuth()
 
@@ -156,12 +158,33 @@ export default function Leaderboard() {
     return () => clearInterval(iv)
   }, [activeGroup])
 
+  // Recap: hämta missade matcher en gång när topplistan öppnas
+  useEffect(() => {
+    if (!activeGroup) return
+    let cancelled = false
+    api.get(`/recap?groupId=${activeGroup.id || 1}`)
+      .then(r => {
+        if (cancelled) return
+        const ms = r.data?.matches || []
+        if (ms.length > 0) setRecap(ms)
+        else api.post('/recap/seen').catch(() => {}) // inget att visa: uppdatera ändå så nästa gång funkar
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [activeGroup])
+
+  const closeRecap = () => {
+    setRecap(null)
+    api.post('/recap/seen').catch(() => {})
+  }
+
   if (loading) return <div className="flex items-center justify-center h-64 text-white/40">Laddar topplista...</div>
 
   const max = enriched[0]?.totalPoints || 1
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+      {recap && <RecapPopup matches={recap} onClose={closeRecap} />}
       <div className="text-center">
         <h1 className="font-display text-5xl text-gold-400 tracking-widest">TOPPLISTA</h1>
         <p className="text-white/40 text-sm mt-1">Uppdateras var 30:e sekund · {activeGroup?.name}</p>

@@ -36,3 +36,11 @@ public record CommentDto(
     int Id, int UserId, string Username, string Text, string CreatedAt,
     bool Mine, List<ReactionGroupDto> Reactions);
 public record ReactRequest(string Emoji);
+
+// Recap-popup: matcher spelade sedan du senast tittade + allas tips/poäng
+public record RecapTipDto(string Username, int HomeGoals, int AwayGoals, int Points);
+public record RecapMatchDto(
+    int MatchId, string? HomeTeam, string? AwayTeam,
+    int HomeGoals, int AwayGoals, string Round, string? StartsAt,
+    List<RecapTipDto> Tips);
+public record RecapDto(List<RecapMatchDto> Matches);

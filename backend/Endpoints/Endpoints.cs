@@ -22,6 +22,7 @@ public static class Endpoints
         MapApiStatus(app);
         MapAdmin(app);
         MapComments(app);
+        MapRecap(app);
     }
 
     static void MapAuth(WebApplication app)
@@ -547,6 +548,70 @@ public static class Endpoints
                 .FirstOrDefaultAsync(r => r.CommentId == id && r.UserId == userId && r.Emoji == emoji);
             if (existing != null) db.CommentReactions.Remove(existing);   // toggle av
             else db.CommentReactions.Add(new CommentReaction { CommentId = id, UserId = userId, Emoji = emoji });
+            await db.SaveChangesAsync();
+            return Results.Ok();
+        }).RequireAuthorization();
+    }
+
+    static void MapRecap(WebApplication app)
+    {
+        // Recap: matcher som fått resultat sedan användaren senast tittade,
+        // med allas tips + poäng. Scopat till en grupp.
+        app.MapGet("/api/recap", async (int groupId, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var me = await db.Users.FindAsync(userId);
+            if (me == null) return Results.NotFound();
+
+            var isMember = await db.UserGroups.AnyAsync(ug => ug.GroupId == groupId && ug.UserId == userId);
+            if (!isMember) return Results.Forbid();
+
+            var since = me.LastSeenRecapAt;
+            var groupUserIds = await db.UserGroups
+                .Where(ug => ug.GroupId == groupId).Select(ug => ug.UserId).ToListAsync();
+            var usersById = await db.Users
+                .Where(u => groupUserIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.Username);
+
+            // Spelade matcher (har resultat)
+            var played = await db.Matches
+                .Where(m => m.HomeGoals != null && m.AwayGoals != null)
+                .ToListAsync();
+
+            // Filtrera på avspark efter "senast sedd" (första gången: visa inget gammalt)
+            var recent = played
+                .Select(m => new { m, kick = MatchTimeService.GetKickoff(m.Id) })
+                .Where(x => x.kick != null && (since == null ? false : x.kick > since))
+                .OrderBy(x => x.kick)
+                .ToList();
+
+            var allTips = await db.Tips.Where(t => groupUserIds.Contains(t.UserId)).ToListAsync();
+            var tipsByMatch = allTips.GroupBy(t => t.MatchId).ToDictionary(g => g.Key, g => g.ToList());
+
+            var matchDtos = recent.Select(x =>
+            {
+                var m = x.m;
+                var tips = (tipsByMatch.GetValueOrDefault(m.Id) ?? new List<Tip>())
+                    .Select(t => new RecapTipDto(
+                        usersById.GetValueOrDefault(t.UserId, "?"),
+                        t.HomeGoals, t.AwayGoals, PointsService.CalcTipPoints(t, m)))
+                    .OrderByDescending(t => t.Points)
+                    .ToList();
+                return new RecapMatchDto(
+                    m.Id, m.HomeTeam, m.AwayTeam, m.HomeGoals!.Value, m.AwayGoals!.Value,
+                    m.Round, x.kick?.ToString("o"), tips);
+            }).ToList();
+
+            return Results.Ok(new RecapDto(matchDtos));
+        }).RequireAuthorization();
+
+        // Markera recap som sett (sätter tidsstämpel till nu)
+        app.MapPost("/api/recap/seen", async (ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var me = await db.Users.FindAsync(userId);
+            if (me == null) return Results.NotFound();
+            me.LastSeenRecapAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
             return Results.Ok();
         }).RequireAuthorization();
