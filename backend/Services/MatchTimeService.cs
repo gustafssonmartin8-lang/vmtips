@@ -41,6 +41,11 @@ public static class MatchTimeService
         {71,Utc("2026-06-27",21,00)},{72,Utc("2026-06-27",21,00)},
         {65,Utc("2026-06-27",23,30)},{66,Utc("2026-06-27",23,30)},
         {59,Utc("2026-06-28",02,00)},{60,Utc("2026-06-28",02,00)},
+        // Semifinaler, brons, final – DB-id 85-88. Svensk tid -2h = UTC.
+        {85, Utc("2026-07-14",19,00)},  // Semifinal 1: 14 juli 21:00 sv
+        {86, Utc("2026-07-15",19,00)},  // Semifinal 2: 15 juli 21:00 sv
+        {87, Utc("2026-07-18",21,00)},  // Brons: 18 juli 23:00 sv
+        {88, Utc("2026-07-19",19,00)},  // Final: 19 juli 21:00 sv
         // Kvartsfinaler – DB-id 81-84. Svensk tid -2h = UTC.
         {81, Utc("2026-07-09",20,00)},  // 22:00 sv
         {82, Utc("2026-07-10",19,00)},  // 21:00 sv
