@@ -4,6 +4,7 @@ import api from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { Avatar } from '../lib/avatars'
 import RecapPopup from '../components/RecapPopup'
+import ChampionBanner from '../components/ChampionBanner'
 
 const MEDALS = ['🥇','🥈','🥉']
 const MEDAL_STYLES = [
@@ -88,6 +89,7 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true)
   const [showMovement, setShowMovement] = useState(false)
   const [recap, setRecap] = useState(null)
+  const [facitFilled, setFacitFilled] = useState(false)
   const prevRef = useRef([])
   const { user, activeGroup } = useAuth()
 
@@ -170,6 +172,10 @@ export default function Leaderboard() {
         else api.post('/recap/seen').catch(() => {}) // inget att visa: uppdatera ändå så nästa gång funkar
       })
       .catch(() => {})
+    // Facit: är turneringen avgjord? (för mästar-firandet)
+    api.get(`/sido/facit?groupId=${activeGroup.id || 1}`)
+      .then(r => { if (!cancelled) setFacitFilled(!!r.data?.filled) })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [activeGroup])
 
@@ -185,6 +191,13 @@ export default function Leaderboard() {
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
       {recap && <RecapPopup matches={recap} onClose={closeRecap} />}
+
+      {/* Mästar-firande när facit är ifyllt */}
+      {facitFilled && enriched.length > 0 && (
+        <ChampionBanner
+          winners={enriched.filter(e => e.displayRank === 1).map(e => e.username)}
+          points={enriched.find(e => e.displayRank === 1)?.totalPoints} />
+      )}
       <div className="text-center">
         <h1 className="font-display text-5xl text-gold-400 tracking-widest">TOPPLISTA</h1>
         <p className="text-white/40 text-sm mt-1">Uppdateras var 30:e sekund · {activeGroup?.name}</p>

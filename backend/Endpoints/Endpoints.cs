@@ -369,6 +369,31 @@ public static class Endpoints
             return Results.Ok(new { updated = 16 });
         }).RequireAuthorization();
 
+        // Sido-facit utan groupId: gäller ALLA grupper (samma turnering, samma facit).
+        // Detta är routen som admin-gränssnittet anropar.
+        app.MapPut("/api/admin/sido", async (SidoAnswerDto req, AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            var groupIds = await db.Groups.Select(g => g.Id).ToListAsync();
+            foreach (var gid in groupIds)
+            {
+                var ans = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == gid);
+                if (ans == null) { ans = new SidoAnswer { GroupId = gid }; db.SidoAnswers.Add(ans); }
+                ans.Skyttekung = req.Skyttekung;
+                ans.Assistkung = req.Assistkung;
+                ans.GultKort   = req.GultKort;
+            }
+            await db.SaveChangesAsync();
+            return Results.Ok(new { updatedGroups = groupIds.Count });
+        }).RequireAuthorization();
+
+        app.MapGet("/api/admin/sido", async (AppDbContext db, ClaimsPrincipal user) =>
+        {
+            if (!IsAdmin(user)) return Results.Forbid();
+            var ans = await db.SidoAnswers.FirstOrDefaultAsync();
+            return Results.Ok(new SidoAnswerDto(ans?.Skyttekung, ans?.Assistkung, ans?.GultKort));
+        }).RequireAuthorization();
+
         app.MapPut("/api/admin/sido/{groupId}", async (int groupId, SidoAnswerDto req, AppDbContext db, ClaimsPrincipal user) =>
         {
             if (!IsAdmin(user)) return Results.Forbid();
@@ -555,6 +580,21 @@ public static class Endpoints
 
     static void MapRecap(WebApplication app)
     {
+        // Sido-facit för medlemmar: används av topplistan för att veta när
+        // tävlingen är avgjord (facit ifyllt) och vinnaren kan firas.
+        app.MapGet("/api/sido/facit", async (int groupId, ClaimsPrincipal user, AppDbContext db) =>
+        {
+            var userId = int.Parse(user.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var isMember = await db.UserGroups.AnyAsync(ug => ug.GroupId == groupId && ug.UserId == userId);
+            if (!isMember) return Results.Forbid();
+            var ans = await db.SidoAnswers.FirstOrDefaultAsync(a => a.GroupId == groupId);
+            bool filled = ans != null &&
+                (!string.IsNullOrWhiteSpace(ans.Skyttekung) ||
+                 !string.IsNullOrWhiteSpace(ans.Assistkung) ||
+                 !string.IsNullOrWhiteSpace(ans.GultKort));
+            return Results.Ok(new { filled, skyttekung = ans?.Skyttekung, assistkung = ans?.Assistkung, gultKort = ans?.GultKort });
+        }).RequireAuthorization();
+
         // Recap: matcher som fått resultat sedan användaren senast tittade,
         // med allas tips + poäng. Scopat till en grupp.
         app.MapGet("/api/recap", async (int groupId, ClaimsPrincipal user, AppDbContext db) =>
